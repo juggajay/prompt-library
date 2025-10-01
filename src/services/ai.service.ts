@@ -212,3 +212,73 @@ export async function processPromptWithAI(
 
   return results;
 }
+
+/**
+ * Improves a prompt using AI
+ */
+export async function improvePrompt(promptText: string): Promise<{
+  improved_prompt: string;
+  changes_made: string[];
+  reasoning: string;
+  clarity_score: number;
+  specificity_score: number;
+  structure_score: number;
+  overall_score: number;
+}> {
+  if (!isOpenAIConfigured || !openai) {
+    throw new Error('OpenAI API is not configured');
+  }
+
+  const systemPrompt = `You are an expert prompt engineer. Your job is to analyze and improve AI prompts to make them more effective.
+
+When improving a prompt, focus on these key areas:
+
+1. **Clarity**: Remove ambiguity, fix grammar, clarify instructions
+2. **Structure**: Add clear sections (Context, Task, Format, Constraints)
+3. **Specificity**: Add concrete details, examples, and parameters
+4. **Format**: Specify exact output format needed
+5. **Context**: Add relevant background information
+6. **Examples**: Include few-shot examples when helpful
+
+Guidelines:
+- Keep the user's intent unchanged
+- Make improvements actionable and clear
+- Explain your changes in simple terms
+- Don't over-complicate simple prompts
+- Preserve the tone unless it's unclear
+
+Return your response as a JSON object with:
+{
+  "improved_prompt": "The enhanced prompt text",
+  "changes_made": ["List of 3-5 specific improvements"],
+  "reasoning": "Brief 1-2 sentence explanation of the main changes",
+  "clarity_score": 0.85,
+  "specificity_score": 0.90,
+  "structure_score": 0.80,
+  "overall_score": 0.85
+}
+
+Scores should be between 0.0 and 1.0, where 1.0 is perfect.`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Improve this prompt:\n\n${promptText}` }
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.3,
+  });
+
+  const result = JSON.parse(response.choices[0].message.content || '{}');
+
+  return {
+    improved_prompt: result.improved_prompt || promptText,
+    changes_made: result.changes_made || [],
+    reasoning: result.reasoning || 'Prompt improved',
+    clarity_score: result.clarity_score || 0.5,
+    specificity_score: result.specificity_score || 0.5,
+    structure_score: result.structure_score || 0.5,
+    overall_score: result.overall_score || 0.5
+  };
+}

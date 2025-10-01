@@ -10,6 +10,7 @@ import { useFolders } from '../../hooks/useFolders';
 import { CATEGORIES, type Prompt } from '../../types';
 import { isOpenAIConfigured } from '../../lib/openai';
 import { processPromptWithAI } from '../../services/ai.service';
+import { PromptImprovement } from './PromptImprovement';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -36,6 +37,7 @@ export function EditPromptForm({ prompt, onClose }: EditPromptFormProps) {
   const [useAutoCategorize, setUseAutoCategorize] = useState(false);
   const [useAutoTag, setUseAutoTag] = useState(false);
   const [useQualityScore, setUseQualityScore] = useState(false);
+  const [showImprovement, setShowImprovement] = useState(false);
 
   const {
     register,
@@ -203,6 +205,41 @@ export function EditPromptForm({ prompt, onClose }: EditPromptFormProps) {
             error={errors.tags?.message}
           />
           <p className="text-xs text-gray-400">Separate tags with commas</p>
+
+          {/* Prompt Improvement Section */}
+          {isOpenAIConfigured && promptText && promptText.length >= 10 && !showImprovement && (
+            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setShowImprovement(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2
+                           bg-gradient-to-r from-purple-600 to-blue-600 text-white
+                           rounded-lg font-medium hover:from-purple-700 hover:to-blue-700
+                           transition-all shadow-md hover:shadow-lg"
+              >
+                <Sparkles className="w-4 h-4" />
+                Re-improve this prompt
+              </button>
+            </div>
+          )}
+
+          {/* Improvement Component */}
+          {showImprovement && (
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+              <PromptImprovement
+                originalPrompt={promptText}
+                onAccept={(improvedPrompt) => {
+                  setValue('prompt_text', improvedPrompt);
+                  setShowImprovement(false);
+                  toast.success('Prompt improved! Review and save when ready.');
+                }}
+                onReject={() => {
+                  setShowImprovement(false);
+                  toast.info('Kept original prompt');
+                }}
+              />
+            </div>
+          )}
 
           {/* AI Enhancement Section */}
           {isOpenAIConfigured && (

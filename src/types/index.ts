@@ -63,6 +63,13 @@ export interface UpdatePromptData {
   folder_id?: string;
   is_favorite?: boolean;
   is_public?: boolean;
+  was_improved?: boolean;
+  original_version?: string;
+  improvement_history?: Array<{
+    timestamp: string;
+    improvement_id?: string;
+    changes_summary: string;
+  }>;
 }
 
 export interface PromptFilters {

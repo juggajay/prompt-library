@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/Card
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { VariableReplacementModal } from './VariableReplacementModal';
+import { ImprovePromptButton } from './ImprovePromptButton';
 import type { Prompt } from '../../types';
 import { formatDate } from '../../lib/utils';
 import { hasVariables } from '../../utils/templates';
@@ -106,6 +107,14 @@ export function PromptCard({
             <Copy className="w-4 h-4" />
             <span>{isTemplate ? 'Fill Template' : 'Copy'}</span>
           </Button>
+        </div>
+
+        {/* AI Improvement Button */}
+        <div className="w-full">
+          <ImprovePromptButton
+            promptId={prompt.id}
+            promptText={prompt.prompt_text}
+          />
         </div>
 
         <div className="text-xs text-gray-400 w-full">
