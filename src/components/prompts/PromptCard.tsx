@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Edit, Trash2, Copy, Star } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { VariableReplacementModal } from './VariableReplacementModal';
 import type { Prompt } from '../../types';
 import { formatDate } from '../../lib/utils';
+import { hasVariables } from '../../utils/templates';
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -20,7 +23,19 @@ export function PromptCard({
   onCopy,
   onToggleFavorite,
 }: PromptCardProps) {
+  const [showVariableModal, setShowVariableModal] = useState(false);
+  const isTemplate = hasVariables(prompt.prompt_text);
+
+  const handleCopyClick = () => {
+    if (isTemplate) {
+      setShowVariableModal(true);
+    } else {
+      onCopy(prompt.prompt_text);
+    }
+  };
+
   return (
+    <>
     <Card className="group hover:bg-white/10 hover:shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-300">
       <CardHeader>
         <div className="flex justify-between items-start gap-2">
@@ -85,11 +100,11 @@ export function PromptCard({
           <Button
             size="sm"
             variant="primary"
-            onClick={() => onCopy(prompt.prompt_text)}
+            onClick={handleCopyClick}
             className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white border-0"
           >
             <Copy className="w-4 h-4" />
-            <span>Copy</span>
+            <span>{isTemplate ? 'Fill Template' : 'Copy'}</span>
           </Button>
         </div>
 
@@ -98,5 +113,15 @@ export function PromptCard({
         </div>
       </CardFooter>
     </Card>
+
+    {showVariableModal && (
+      <VariableReplacementModal
+        template={prompt.prompt_text}
+        promptTitle={prompt.title}
+        onClose={() => setShowVariableModal(false)}
+        onCopy={onCopy}
+      />
+    )}
+    </>
   );
 }

@@ -9,6 +9,38 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      folders: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          color: string | null
+          parent_folder_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          color?: string | null
+          parent_folder_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          color?: string | null
+          parent_folder_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       profiles: {
         Row: {
           id: string
@@ -47,6 +79,7 @@ export interface Database {
           metadata: Json
           version: number
           parent_prompt_id: string | null
+          folder_id: string | null
           is_favorite: boolean
           is_public: boolean
           use_count: number
@@ -69,6 +102,7 @@ export interface Database {
           metadata?: Json
           version?: number
           parent_prompt_id?: string | null
+          folder_id?: string | null
           is_favorite?: boolean
           is_public?: boolean
           use_count?: number
@@ -91,6 +125,7 @@ export interface Database {
           metadata?: Json
           version?: number
           parent_prompt_id?: string | null
+          folder_id?: string | null
           is_favorite?: boolean
           is_public?: boolean
           use_count?: number

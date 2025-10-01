@@ -1,17 +1,26 @@
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Download } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/Button';
 import { PromptCard } from '../components/prompts/PromptCard';
 import { CreatePromptForm } from '../components/prompts/CreatePromptForm';
+import { EditPromptForm } from '../components/prompts/EditPromptForm';
 import { SearchBar } from '../components/features/SearchBar';
 import { FilterBar } from '../components/features/FilterBar';
+import { FolderSidebar } from '../components/features/FolderSidebar';
+import { KeyboardShortcutsHelp } from '../components/features/KeyboardShortcutsHelp';
 import { usePrompts, useDeletePrompt, useToggleFavorite, useIncrementUsage } from '../hooks/usePrompts';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { toast } from 'sonner';
-import type { Category, PromptFilters } from '../types';
+import { exportPrompts, type ExportFormat } from '../utils/export';
+import type { Category, PromptFilters, Prompt } from '../types';
 
 export function Dashboard() {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<PromptFilters>({
     sortBy: 'created_at',
     sortOrder: 'desc',
@@ -28,6 +37,10 @@ export function Dashboard() {
 
   const handleCategoryChange = (category: Category | undefined) => {
     setFilters((prev) => ({ ...prev, category }));
+  };
+
+  const handleFolderSelect = (folderId: string | undefined) => {
+    setFilters((prev) => ({ ...prev, folderId }));
   };
 
   const handleToggleFavorites = () => {
@@ -58,6 +71,79 @@ export function Dashboard() {
     await toggleFavorite.mutateAsync({ id, isFavorite });
   };
 
+  const handleExport = (format: ExportFormat) => {
+    if (!data || data.prompts.length === 0) {
+      toast.error('No prompts to export');
+      return;
+    }
+
+    try {
+      exportPrompts(data.prompts, format);
+      toast.success(`Exported ${data.prompts.length} prompts as ${format.toUpperCase()}`);
+      setShowExportMenu(false);
+    } catch (error) {
+      toast.error('Failed to export prompts');
+      console.error(error);
+    }
+  };
+
+  // Keyboard shortcuts
+  const shortcuts = [
+    {
+      key: 'k',
+      ctrlKey: true,
+      metaKey: true,
+      handler: () => {
+        // Focus search input
+        const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+        searchInput?.focus();
+      },
+      description: 'Focus search',
+    },
+    {
+      key: 'n',
+      ctrlKey: true,
+      metaKey: true,
+      handler: () => {
+        if (!showCreateForm && !editingPrompt) {
+          setShowCreateForm(true);
+        }
+      },
+      description: 'New prompt',
+    },
+    {
+      key: 'e',
+      ctrlKey: true,
+      metaKey: true,
+      handler: () => {
+        if (!showCreateForm && !editingPrompt) {
+          setShowExportMenu(!showExportMenu);
+        }
+      },
+      description: 'Export prompts',
+    },
+    {
+      key: 'Escape',
+      handler: () => {
+        setShowCreateForm(false);
+        setEditingPrompt(null);
+        setShowExportMenu(false);
+        setShowShortcutsHelp(false);
+      },
+      description: 'Close modal',
+    },
+    {
+      key: '?',
+      shiftKey: true,
+      handler: () => {
+        setShowShortcutsHelp(!showShortcutsHelp);
+      },
+      description: 'Show keyboard shortcuts',
+    },
+  ];
+
+  useKeyboardShortcuts(shortcuts);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -69,13 +155,52 @@ export function Dashboard() {
               {data?.total || 0} prompt{data?.total !== 1 ? 's' : ''} in your library
             </p>
           </div>
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white shadow-lg shadow-purple-500/50"
-          >
-            <Plus className="w-5 h-5" />
-            <span>New Prompt</span>
-          </Button>
+          <div className="flex gap-3">
+            {/* Export Button with Dropdown */}
+            <div className="relative">
+              <Button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                variant="outline"
+                className="flex items-center gap-2 bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
+              >
+                <Download className="w-5 h-5" />
+                <span>Export</span>
+              </Button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl shadow-purple-500/20 z-10">
+                  <div className="py-2">
+                    <button
+                      onClick={() => handleExport('json')}
+                      className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
+                    >
+                      Export as JSON
+                    </button>
+                    <button
+                      onClick={() => handleExport('csv')}
+                      className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
+                    >
+                      Export as CSV
+                    </button>
+                    <button
+                      onClick={() => handleExport('markdown')}
+                      className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
+                    >
+                      Export as Markdown
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white shadow-lg shadow-purple-500/50"
+            >
+              <Plus className="w-5 h-5" />
+              <span>New Prompt</span>
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -84,7 +209,11 @@ export function Dashboard() {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Filters */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            <FolderSidebar
+              selectedFolderId={filters.folderId}
+              onFolderSelect={handleFolderSelect}
+            />
             <FilterBar
               selectedCategory={filters.category}
               onCategoryChange={handleCategoryChange}
@@ -135,10 +264,7 @@ export function Dashboard() {
                   <PromptCard
                     key={prompt.id}
                     prompt={prompt}
-                    onEdit={() => {
-                      // TODO: Implement edit modal
-                      toast.info('Edit functionality coming soon!');
-                    }}
+                    onEdit={() => setEditingPrompt(prompt)}
                     onDelete={handleDelete}
                     onCopy={(text) => handleCopy(text, prompt.id)}
                     onToggleFavorite={handleToggleFavorite}
@@ -152,6 +278,19 @@ export function Dashboard() {
 
       {/* Create Prompt Modal */}
       {showCreateForm && <CreatePromptForm onClose={() => setShowCreateForm(false)} />}
+
+      {/* Edit Prompt Modal */}
+      {editingPrompt && (
+        <EditPromptForm prompt={editingPrompt} onClose={() => setEditingPrompt(null)} />
+      )}
+
+      {/* Keyboard Shortcuts Help */}
+      {showShortcutsHelp && (
+        <KeyboardShortcutsHelp
+          shortcuts={shortcuts}
+          onClose={() => setShowShortcutsHelp(false)}
+        />
+      )}
     </AppLayout>
   );
 }

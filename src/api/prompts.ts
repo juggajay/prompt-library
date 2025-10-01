@@ -33,6 +33,7 @@ export async function getPrompts(filters: PromptFilters = {}) {
     category,
     tags,
     isFavorite,
+    folderId,
     search,
     sortBy = 'created_at',
     sortOrder = 'desc',
@@ -53,6 +54,14 @@ export async function getPrompts(filters: PromptFilters = {}) {
 
   if (isFavorite) {
     query = query.eq('is_favorite', true);
+  }
+
+  if (folderId !== undefined) {
+    if (folderId === 'unorganized') {
+      query = query.is('folder_id', null);
+    } else {
+      query = query.eq('folder_id', folderId);
+    }
   }
 
   if (search) {

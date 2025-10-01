@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom';
-import { LogOut, User, BookOpen } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { LogOut, User, BookOpen, BarChart3, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 
 export function Navbar() {
   const { user, signOut } = useAuth();
+  const location = useLocation();
 
   return (
     <nav className="bg-white/5 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
@@ -18,6 +19,34 @@ export function Navbar() {
               Prompt Library
             </span>
           </Link>
+
+          <div className="flex items-center space-x-4">
+            {user && (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/dashboard"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                    location.pathname === '/dashboard'
+                      ? 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  to="/analytics"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                    location.pathname === '/analytics'
+                      ? 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Analytics</span>
+                </Link>
+              </div>
+            )}
 
           <div className="flex items-center space-x-4">
             {user && (

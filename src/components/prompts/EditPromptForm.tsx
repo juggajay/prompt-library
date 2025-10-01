@@ -5,9 +5,9 @@ import { X, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
-import { useCreatePrompt } from '../../hooks/usePrompts';
+import { useUpdatePrompt } from '../../hooks/usePrompts';
 import { useFolders } from '../../hooks/useFolders';
-import { CATEGORIES } from '../../types';
+import { CATEGORIES, type Prompt } from '../../types';
 import { isOpenAIConfigured } from '../../lib/openai';
 import { processPromptWithAI } from '../../services/ai.service';
 import { useState } from 'react';
@@ -24,12 +24,13 @@ const promptSchema = z.object({
 
 type PromptFormData = z.infer<typeof promptSchema>;
 
-interface CreatePromptFormProps {
+interface EditPromptFormProps {
+  prompt: Prompt;
   onClose: () => void;
 }
 
-export function CreatePromptForm({ onClose }: CreatePromptFormProps) {
-  const createPrompt = useCreatePrompt();
+export function EditPromptForm({ prompt, onClose }: EditPromptFormProps) {
+  const updatePrompt = useUpdatePrompt();
   const { data: folders = [] } = useFolders();
   const [aiProcessing, setAiProcessing] = useState(false);
   const [useAutoCategorize, setUseAutoCategorize] = useState(false);
@@ -45,7 +46,12 @@ export function CreatePromptForm({ onClose }: CreatePromptFormProps) {
   } = useForm<PromptFormData>({
     resolver: zodResolver(promptSchema),
     defaultValues: {
-      category: 'Other',
+      title: prompt.title,
+      prompt_text: prompt.prompt_text,
+      description: prompt.description || '',
+      category: prompt.category,
+      tags: prompt.tags.join(', '),
+      folder_id: prompt.folder_id || '',
     },
   });
 
@@ -98,13 +104,16 @@ export function CreatePromptForm({ onClose }: CreatePromptFormProps) {
       ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
       : [];
 
-    await createPrompt.mutateAsync({
-      title: data.title,
-      prompt_text: data.prompt_text,
-      description: data.description,
-      category: data.category,
-      tags,
-      folder_id: data.folder_id || undefined,
+    await updatePrompt.mutateAsync({
+      id: prompt.id,
+      updates: {
+        title: data.title,
+        prompt_text: data.prompt_text,
+        description: data.description,
+        category: data.category,
+        tags,
+        folder_id: data.folder_id || undefined,
+      },
     });
 
     onClose();
@@ -115,7 +124,7 @@ export function CreatePromptForm({ onClose }: CreatePromptFormProps) {
       <div className="bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl shadow-purple-500/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-slate-900/95 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center rounded-t-3xl">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-            Create New Prompt
+            Edit Prompt
           </h2>
           <button
             onClick={onClose}
@@ -259,10 +268,10 @@ export function CreatePromptForm({ onClose }: CreatePromptFormProps) {
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
-              disabled={createPrompt.isPending}
+              disabled={updatePrompt.isPending}
               className="flex-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white"
             >
-              {createPrompt.isPending ? 'Creating...' : 'Create Prompt'}
+              {updatePrompt.isPending ? 'Updating...' : 'Update Prompt'}
             </Button>
             <Button
               type="button"

@@ -10,6 +10,17 @@ export const CATEGORIES = [
 
 export type Category = typeof CATEGORIES[number];
 
+export interface Folder {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  parent_folder_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Prompt {
   id: string;
   user_id: string;
@@ -21,6 +32,7 @@ export interface Prompt {
   metadata: Record<string, any>;
   version: number;
   parent_prompt_id: string | null;
+  folder_id: string | null;
   is_favorite: boolean;
   is_public: boolean;
   use_count: number;
@@ -39,6 +51,7 @@ export interface CreatePromptData {
   description?: string;
   category: Category;
   tags?: string[];
+  folder_id?: string;
 }
 
 export interface UpdatePromptData {
@@ -47,6 +60,7 @@ export interface UpdatePromptData {
   description?: string;
   category?: Category;
   tags?: string[];
+  folder_id?: string;
   is_favorite?: boolean;
   is_public?: boolean;
 }
@@ -55,11 +69,26 @@ export interface PromptFilters {
   category?: Category;
   tags?: string[];
   isFavorite?: boolean;
+  folderId?: string;
   search?: string;
   sortBy?: 'created_at' | 'updated_at' | 'title' | 'use_count';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   pageSize?: number;
+}
+
+export interface CreateFolderData {
+  name: string;
+  description?: string;
+  color?: string;
+  parent_folder_id?: string;
+}
+
+export interface UpdateFolderData {
+  name?: string;
+  description?: string;
+  color?: string;
+  parent_folder_id?: string;
 }
 
 export interface User {
