@@ -1,18 +1,47 @@
-# Prompt Library App
+# 🚀 Prompt Library - AI-Powered Prompt Management
 
-A modern, full-featured prompt library application for organizing, searching, and managing AI prompts. Built with React, TypeScript, Supabase, and OpenAI.
+A beautiful, feature-rich application for organizing and managing your AI prompts with intelligent features and modern design.
 
-## Features
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![React](https://img.shields.io/badge/React-19-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
+![Tailwind](https://img.shields.io/badge/Tailwind-4.1-blue)
 
-- 🔐 **Authentication**: Secure email/password authentication with Supabase Auth
-- 📝 **CRUD Operations**: Create, read, update, and delete prompts
-- 🔍 **Search**: Full-text search with PostgreSQL
-- 🏷️ **Organization**: Categories and tags for easy organization
-- ⭐ **Favorites**: Mark important prompts as favorites
-- 📊 **Usage Tracking**: Track how often you use each prompt
-- 📋 **Copy to Clipboard**: One-click copying with usage tracking
-- 🎨 **Beautiful UI**: Modern, responsive design with Tailwind CSS
-- 🤖 **AI Features**: Auto-categorization and semantic search (optional)
+## ✨ Complete Feature Set
+
+### 🤖 AI-Powered Features
+- **Auto-Categorization**: GPT-4o-mini analyzes and suggests categories with confidence scores
+- **Auto-Tagging**: Intelligent tag generation (3-7 tags) from content analysis
+- **Quality Scoring**: 0-100 rating with detailed feedback and improvement suggestions
+- **Embedding Generation**: Vector embeddings for future semantic search
+
+### 📁 Organization & Management
+- **Folders System**: Color-coded folders (6 presets) with nesting support
+- **Categories & Tags**: Flexible organization with custom categories and tags
+- **Favorites**: Star important prompts for quick access
+- **Search & Filter**: Full-text search with multiple filter combinations
+- **Sort Options**: By date, usage, title, favorites
+
+### ⚡ Productivity Features
+- **Keyboard Shortcuts**: 5 shortcuts for power users (Cmd/Ctrl + K, N, E, ESC, ?)
+- **Template Variables**: Support for `{{placeholder}}` syntax with live preview
+- **One-Click Copy**: Clipboard integration with automatic usage tracking
+- **Edit Functionality**: Full inline editing with all AI features
+- **Export**: Download prompts as JSON, CSV, or Markdown
+
+### 📊 Analytics Dashboard
+- Usage statistics and trends
+- Category distribution with visual breakdown
+- Top 5 most used prompts ranking
+- Recent activity timeline with dates
+- Real-time metrics
+
+### 🎨 Beautiful Design
+- Modern dark theme with purple/fuchsia gradients
+- Glassmorphism effects throughout
+- Floating animated orbs
+- Smooth transitions and hover effects
+- Fully responsive (mobile, tablet, desktop)
 
 ## Tech Stack
 
