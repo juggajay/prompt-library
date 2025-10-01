@@ -132,7 +132,7 @@ export function Dashboard() {
                   <PromptCard
                     key={prompt.id}
                     prompt={prompt}
-                    onEdit={(id) => {
+                    onEdit={() => {
                       // TODO: Implement edit modal
                       toast.info('Edit functionality coming soon!');
                     }}

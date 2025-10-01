@@ -10,18 +10,17 @@ export async function createPrompt(data: CreatePromptData) {
     throw new Error('User not authenticated');
   }
 
+  // @ts-ignore - Supabase type inference issue
   const { data: prompt, error } = await supabase
     .from('prompts')
-    .insert([
-      {
-        title: data.title,
-        prompt_text: data.prompt_text,
-        description: data.description || null,
-        category: data.category,
-        tags: data.tags || [],
-        user_id: user.id,
-      },
-    ])
+    .insert({
+      title: data.title,
+      prompt_text: data.prompt_text,
+      description: data.description || null,
+      category: data.category,
+      tags: data.tags || [],
+      user_id: user.id,
+    })
     .select()
     .single();
 
@@ -96,6 +95,7 @@ export async function getPromptById(id: string) {
 }
 
 export async function updatePrompt(id: string, updates: UpdatePromptData) {
+  // @ts-ignore - Supabase type inference issue
   const { data, error } = await supabase
     .from('prompts')
     .update(updates)
@@ -114,6 +114,7 @@ export async function deletePrompt(id: string) {
 }
 
 export async function toggleFavorite(id: string, isFavorite: boolean) {
+  // @ts-ignore - Supabase type inference issue
   const { data, error } = await supabase
     .from('prompts')
     .update({ is_favorite: isFavorite })
@@ -126,6 +127,7 @@ export async function toggleFavorite(id: string, isFavorite: boolean) {
 }
 
 export async function incrementUsage(id: string) {
+  // @ts-ignore - Supabase type inference issue
   const { error } = await supabase.rpc('increment_usage', {
     prompt_id: id,
   });
