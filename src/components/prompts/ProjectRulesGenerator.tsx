@@ -75,12 +75,13 @@ export function ProjectRulesGenerator({ promptId, promptContent }: ProjectRulesG
 
       if (data.success) {
         setSessionId(data.sessionId);
+        const projectType = data.analysis?.project_type || 'project';
         setMessages([
           {
             role: 'assistant',
-            content: `I've analyzed your prompt and detected you're building a **${data.analysis.project_type.replace('_', ' ')}**.
+            content: `I've analyzed your prompt and detected you're building a **${projectType.replace('_', ' ')}**.
 
-To generate the best rules, I'll ask you ${data.questions.length} quick questions (about ${data.estimatedTime || '3-5 minutes'}).
+To generate the best rules, I'll ask you ${data.questions?.length || 0} quick questions (about ${data.estimatedTime || '3-5 minutes'}).
 
 Let's get started! 🚀`
           }
