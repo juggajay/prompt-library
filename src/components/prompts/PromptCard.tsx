@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Edit, Trash2, Copy, Star } from 'lucide-react';
+import { Edit, Trash2, Copy, Star, Settings } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { VariableReplacementModal } from './VariableReplacementModal';
 import { ImprovePromptButton } from './ImprovePromptButton';
+import { ProjectRulesGenerator } from './ProjectRulesGenerator';
 import type { Prompt } from '../../types';
 import { formatDate } from '../../lib/utils';
 import { hasVariables } from '../../utils/templates';
@@ -25,6 +26,7 @@ export function PromptCard({
   onToggleFavorite,
 }: PromptCardProps) {
   const [showVariableModal, setShowVariableModal] = useState(false);
+  const [showRulesGenerator, setShowRulesGenerator] = useState(false);
   const isTemplate = hasVariables(prompt.prompt_text);
 
   const handleCopyClick = () => {
@@ -110,12 +112,32 @@ export function PromptCard({
         </div>
 
         {/* AI Improvement Button */}
-        <div className="w-full">
+        <div className="w-full flex gap-2">
           <ImprovePromptButton
             promptId={prompt.id}
             promptText={prompt.prompt_text}
           />
+          <button
+            onClick={() => setShowRulesGenerator(!showRulesGenerator)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm
+                       text-blue-300 bg-blue-500/10 hover:bg-blue-500/20
+                       border border-blue-500/30 rounded-lg transition-all
+                       hover:shadow-lg hover:shadow-blue-500/20"
+          >
+            <Settings className="w-4 h-4" />
+            {showRulesGenerator ? 'Hide Rules' : 'Generate Rules'}
+          </button>
         </div>
+
+        {/* Project Rules Generator */}
+        {showRulesGenerator && (
+          <div className="w-full mt-4">
+            <ProjectRulesGenerator
+              promptId={prompt.id}
+              promptContent={prompt.prompt_text}
+            />
+          </div>
+        )}
 
         <div className="text-xs text-gray-400 w-full">
           Used {prompt.use_count} times • {formatDate(prompt.created_at)}

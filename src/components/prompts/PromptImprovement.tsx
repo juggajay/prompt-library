@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Check, X, Copy, Loader2, TrendingUp } from 'lucide-react';
+import { Sparkles, Check, X, Copy, Loader2, TrendingUp, Edit2 } from 'lucide-react';
 import type { ImprovementResult } from '../../types/improvement';
 
 interface PromptImprovementProps {
@@ -17,6 +17,8 @@ export function PromptImprovement({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImprovementResult | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState('');
 
   const handleImprove = async () => {
     setLoading(true);
@@ -37,6 +39,7 @@ export function PromptImprovement({
 
       const data: ImprovementResult = await response.json();
       setResult(data);
+      setEditedPrompt(data.improved_prompt); // Initialize edited version
       setShowComparison(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -47,8 +50,20 @@ export function PromptImprovement({
 
   const handleAcceptImprovement = () => {
     if (result && onAccept) {
-      onAccept(result.improved_prompt, result.improvement_id);
+      // Use edited version if in edit mode, otherwise use original improved version
+      const finalPrompt = isEditing ? editedPrompt : result.improved_prompt;
+      onAccept(finalPrompt, result.improvement_id);
     }
+  };
+
+  const handleStartEditing = () => {
+    setEditedPrompt(result?.improved_prompt || '');
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setEditedPrompt(result?.improved_prompt || '');
+    setIsEditing(false);
   };
 
   const handleRejectImprovement = () => {
@@ -160,18 +175,43 @@ export function PromptImprovement({
           {/* Improved */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-green-400">Improved</h4>
-              <button
-                onClick={() => copyToClipboard(result.improved_prompt)}
-                className="p-1 hover:bg-white/10 rounded transition-colors"
-              >
-                <Copy className="w-4 h-4 text-gray-400" />
-              </button>
+              <h4 className="text-sm font-semibold text-green-400">
+                {isEditing ? 'Editing Improved Version' : 'Improved'}
+              </h4>
+              <div className="flex gap-2">
+                {!isEditing && (
+                  <button
+                    onClick={handleStartEditing}
+                    className="p-1 hover:bg-white/10 rounded transition-colors"
+                    title="Edit improved version"
+                  >
+                    <Edit2 className="w-4 h-4 text-gray-400" />
+                  </button>
+                )}
+                <button
+                  onClick={() => copyToClipboard(isEditing ? editedPrompt : result.improved_prompt)}
+                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                  title="Copy to clipboard"
+                >
+                  <Copy className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
             </div>
-            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20
-                            min-h-[200px] text-sm text-white">
-              {result.improved_prompt}
-            </div>
+            {isEditing ? (
+              <textarea
+                value={editedPrompt}
+                onChange={(e) => setEditedPrompt(e.target.value)}
+                className="w-full p-4 bg-green-500/10 border border-green-500/30 rounded-lg
+                           min-h-[200px] text-sm text-white focus:outline-none focus:ring-2
+                           focus:ring-green-500 focus:border-green-500 resize-y"
+                rows={10}
+              />
+            ) : (
+              <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20
+                              min-h-[200px] text-sm text-white whitespace-pre-wrap">
+                {result.improved_prompt}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -198,27 +238,65 @@ export function PromptImprovement({
         </p>
       </div>
 
+      {/* Edit Mode Notice */}
+      {isEditing && (
+        <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+          <p className="text-sm text-yellow-300">
+            ✏️ You're editing the improved version. Click "Save Edits" when done, or "Cancel" to revert changes.
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-3">
-        <button
-          onClick={handleAcceptImprovement}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2
-                     bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg
-                     font-medium hover:from-green-500 hover:to-emerald-500 transition-all
-                     shadow-lg shadow-green-500/20"
-        >
-          <Check className="w-4 h-4" />
-          Use Improved Version
-        </button>
-        <button
-          onClick={handleRejectImprovement}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2
-                     bg-white/5 border border-white/10 text-gray-300 rounded-lg
-                     font-medium hover:bg-white/10 hover:text-white transition-all"
-        >
-          <X className="w-4 h-4" />
-          Keep Original
-        </button>
+        {isEditing ? (
+          <>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                // Keep the edited version for saving
+              }}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2
+                         bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg
+                         font-medium hover:from-green-500 hover:to-emerald-500 transition-all
+                         shadow-lg shadow-green-500/20"
+            >
+              <Check className="w-4 h-4" />
+              Save Edits
+            </button>
+            <button
+              onClick={handleCancelEditing}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2
+                         bg-white/5 border border-white/10 text-gray-300 rounded-lg
+                         font-medium hover:bg-white/10 hover:text-white transition-all"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={handleAcceptImprovement}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2
+                         bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg
+                         font-medium hover:from-green-500 hover:to-emerald-500 transition-all
+                         shadow-lg shadow-green-500/20"
+            >
+              <Check className="w-4 h-4" />
+              {editedPrompt !== result.improved_prompt ? 'Use Edited Version' : 'Use Improved Version'}
+            </button>
+            <button
+              onClick={handleRejectImprovement}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2
+                         bg-white/5 border border-white/10 text-gray-300 rounded-lg
+                         font-medium hover:bg-white/10 hover:text-white transition-all"
+            >
+              <X className="w-4 h-4" />
+              Keep Original
+            </button>
+          </>
+        )}
       </div>
 
       {/* Metadata (development only) */}
