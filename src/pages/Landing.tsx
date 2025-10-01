@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import {
   BookOpen, Search, Star, Tags, Zap, Lock, TrendingUp, Copy,
-  Sparkles, ArrowRight, Check, Users, BarChart3
+  Sparkles, ArrowRight, Check, Users, BarChart3, ChevronDown, Quote
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
@@ -199,6 +200,78 @@ export function Landing() {
           </div>
         </div>
 
+        {/* Testimonials Section */}
+        <div className="max-w-7xl mx-auto px-6 py-24">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Loved by professionals
+              </span>
+            </h2>
+            <p className="text-xl text-gray-400">
+              See what our users are saying about Prompt Library
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <TestimonialCard
+              quote="Prompt Library has completely transformed how I manage my AI workflows. The search is lightning-fast and the AI categorization is spot-on!"
+              author="Sarah Chen"
+              role="Product Manager"
+              company="TechCorp"
+              gradient="from-purple-500 to-fuchsia-500"
+            />
+            <TestimonialCard
+              quote="I've tried many prompt management tools, but this is by far the best. The interface is beautiful and the features are exactly what I needed."
+              author="Marcus Rodriguez"
+              role="AI Engineer"
+              company="DataFlow"
+              gradient="from-fuchsia-500 to-orange-500"
+            />
+            <TestimonialCard
+              quote="The quality scoring and usage analytics help me optimize my prompts. It's like having an AI assistant for my AI assistants!"
+              author="Emily Watson"
+              role="Content Strategist"
+              company="Creative Labs"
+              gradient="from-cyan-500 to-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="max-w-4xl mx-auto px-6 py-24">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Frequently Asked Questions
+              </span>
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            <FAQItem
+              question="Is Prompt Library really free forever?"
+              answer="Yes! Our core features are completely free forever with no credit card required. We believe everyone should have access to great prompt management tools."
+            />
+            <FAQItem
+              question="How does AI auto-categorization work?"
+              answer="We use OpenAI's GPT models to analyze your prompts and automatically suggest categories and tags. You can always override these suggestions to match your preferences."
+            />
+            <FAQItem
+              question="Is my data secure?"
+              answer="Absolutely. We use bank-level encryption and Supabase's Row-Level Security to ensure your prompts are completely private and secure. Only you can access your data."
+            />
+            <FAQItem
+              question="Can I export my prompts?"
+              answer="Yes! You can export all your prompts to various formats including JSON, CSV, and Markdown at any time."
+            />
+            <FAQItem
+              question="What's the difference between semantic and full-text search?"
+              answer="Full-text search finds exact matches in your prompts, while semantic search uses AI to understand meaning and find related prompts even if they use different words."
+            />
+          </div>
+        </div>
+
         {/* Final CTA */}
         <div className="max-w-7xl mx-auto px-6 py-32">
           <div className="relative bg-gradient-to-br from-purple-600 via-fuchsia-600 to-orange-600 rounded-3xl p-16 overflow-hidden">
@@ -280,6 +353,60 @@ function BentoCard({ icon, title, description, gradient, large }: BentoCardProps
       </div>
       <h3 className="text-2xl font-bold text-white mb-3">{title}</h3>
       <p className="text-gray-400 leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+interface TestimonialCardProps {
+  quote: string;
+  author: string;
+  role: string;
+  company: string;
+  gradient: string;
+}
+
+function TestimonialCard({ quote, author, role, company, gradient }: TestimonialCardProps) {
+  return (
+    <div className="group relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm hover:scale-105">
+      <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${gradient} mb-6`}>
+        <Quote className="w-6 h-6 text-white" />
+      </div>
+      <p className="text-gray-300 leading-relaxed mb-6 italic">"{quote}"</p>
+      <div className="flex items-center gap-3">
+        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-bold text-lg`}>
+          {author.split(' ').map(n => n[0]).join('')}
+        </div>
+        <div>
+          <div className="text-white font-semibold">{author}</div>
+          <div className="text-gray-400 text-sm">{role} at {company}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface FAQItemProps {
+  question: string;
+  answer: string;
+}
+
+function FAQItem({ question, answer }: FAQItemProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm overflow-hidden hover:bg-white/10 transition-all duration-300">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+      >
+        <span className="text-lg font-semibold text-white pr-4">{question}</span>
+        <ChevronDown className={`w-6 h-6 text-purple-400 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
+        <div className="px-8 pb-6 text-gray-300 leading-relaxed">
+          {answer}
+        </div>
+      </div>
     </div>
   );
 }
