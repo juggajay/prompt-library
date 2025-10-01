@@ -91,7 +91,7 @@ export function Analytics() {
               Category Distribution
             </h3>
             <div className="space-y-4">
-              {categoryStats.map((cat, idx) => (
+              {categoryStats.map((cat) => (
                 <div key={cat.name}>
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-white">{cat.name}</span>

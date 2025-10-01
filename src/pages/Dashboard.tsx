@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Download } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/Button';
@@ -20,7 +20,6 @@ export function Dashboard() {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<PromptFilters>({
     sortBy: 'created_at',
     sortOrder: 'desc',

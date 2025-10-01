@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Folder, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Folder, Plus, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder } from '../../hooks/useFolders';

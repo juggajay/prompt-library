@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { X, Copy } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Textarea } from '../ui/Textarea';
 import { extractVariables, replaceVariables, type TemplateVariable } from '../../utils/templates';
 import { toast } from 'sonner';
 
