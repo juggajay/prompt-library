@@ -5,6 +5,7 @@ import { X, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
+import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { useUpdatePrompt } from '../../hooks/usePrompts';
 import { useFolders } from '../../hooks/useFolders';
 import { CATEGORIES, type Prompt } from '../../types';
@@ -144,13 +145,16 @@ export function EditPromptForm({ prompt, onClose }: EditPromptFormProps) {
             error={errors.title?.message}
           />
 
-          <Textarea
-            {...register('prompt_text')}
-            label="Prompt Text"
-            placeholder="Enter your prompt here..."
-            rows={8}
-            error={errors.prompt_text?.message}
-          />
+          <div>
+            <MarkdownEditor
+              value={promptText}
+              onChange={(value) => setValue('prompt_text', value || '')}
+              label="Prompt Text"
+              placeholder="Enter your prompt here... (Markdown supported)"
+              height={300}
+              error={errors.prompt_text?.message}
+            />
+          </div>
 
           <Textarea
             {...register('description')}
