@@ -64,14 +64,14 @@ export function Dashboard() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Prompts</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">My Prompts</h1>
+            <p className="text-gray-300 mt-1">
               {data?.total || 0} prompt{data?.total !== 1 ? 's' : ''} in your library
             </p>
           </div>
           <Button
             onClick={() => setShowCreateForm(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white shadow-lg shadow-purple-500/50"
           >
             <Plus className="w-5 h-5" />
             <span>New Prompt</span>
@@ -100,27 +100,30 @@ export function Dashboard() {
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading prompts...</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+                  <p className="mt-4 text-gray-300">Loading prompts...</p>
                 </div>
               </div>
             )}
 
             {error && (
               <div className="text-center py-12">
-                <p className="text-red-600">Error loading prompts. Please try again.</p>
+                <p className="text-red-400">Error loading prompts. Please try again.</p>
               </div>
             )}
 
             {data && data.prompts.length === 0 && (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                <p className="text-gray-600 text-lg mb-4">No prompts found</p>
-                <p className="text-gray-500 mb-6">
+              <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+                <p className="text-gray-200 text-lg mb-4">No prompts found</p>
+                <p className="text-gray-400 mb-6">
                   {filters.search || filters.category || filters.isFavorite
                     ? 'Try adjusting your filters'
                     : 'Get started by creating your first prompt'}
                 </p>
-                <Button onClick={() => setShowCreateForm(true)}>
+                <Button
+                  onClick={() => setShowCreateForm(true)}
+                  className="bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white shadow-lg shadow-purple-500/50"
+                >
                   Create Your First Prompt
                 </Button>
               </div>

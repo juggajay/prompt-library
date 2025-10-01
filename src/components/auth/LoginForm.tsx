@@ -46,51 +46,55 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-        <p className="text-gray-600">Sign in to your prompt library</p>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input
-          {...register('email')}
-          label="Email"
-          type="email"
-          placeholder="you@example.com"
-          error={errors.email?.message}
-          disabled={isLoading}
-        />
-
-        <Input
-          {...register('password')}
-          label="Password"
-          type="password"
-          placeholder="Enter your password"
-          error={errors.password?.message}
-          disabled={isLoading}
-        />
-
-        <div className="flex items-center justify-end">
-          <Link
-            to="/forgot-password"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Forgot password?
-          </Link>
+    <div className="w-full max-w-md mx-auto p-8">
+      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 shadow-2xl shadow-purple-500/20">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+            Welcome Back
+          </h1>
+          <p className="text-gray-300">Sign in to your prompt library</p>
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Signing in...' : 'Sign In'}
-        </Button>
-      </form>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <Input
+            {...register('email')}
+            label="Email"
+            type="email"
+            placeholder="you@example.com"
+            error={errors.email?.message}
+            disabled={isLoading}
+          />
 
-      <p className="mt-6 text-center text-sm text-gray-600">
-        Don't have an account?{' '}
-        <Link to="/signup" className="text-blue-600 hover:underline font-medium">
-          Sign up
-        </Link>
-      </p>
+          <Input
+            {...register('password')}
+            label="Password"
+            type="password"
+            placeholder="Enter your password"
+            error={errors.password?.message}
+            disabled={isLoading}
+          />
+
+          <div className="flex items-center justify-end">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-purple-400 hover:text-fuchsia-400 transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Signing in...' : 'Sign In'}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-400">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-purple-400 hover:text-fuchsia-400 transition-colors font-medium">
+            Sign up
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -21,13 +21,13 @@ export function SearchBar({ onSearch, placeholder = 'Search prompts...' }: Searc
 
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 w-5 h-5 z-10" />
       <Input
         type="text"
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="pl-10"
+        className="pl-12"
       />
     </div>
   );
