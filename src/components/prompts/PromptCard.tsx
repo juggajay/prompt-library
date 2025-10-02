@@ -27,6 +27,7 @@ export function PromptCard({
 }: PromptCardProps) {
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [showRulesGenerator, setShowRulesGenerator] = useState(false);
+  const [showImprovement, setShowImprovement] = useState(false);
   const isTemplate = hasVariables(prompt.prompt_text);
 
   const handleCopyClick = () => {
@@ -39,7 +40,7 @@ export function PromptCard({
 
   return (
     <>
-    <Card className="group hover:bg-white/10 hover:shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-300">
+    <Card className={`group hover:bg-white/10 hover:shadow-2xl hover:shadow-purple-500/20 hover:scale-[1.02] transition-all duration-300 ${showImprovement || showRulesGenerator ? 'md:col-span-2' : ''}`}>
       <CardHeader>
         <div className="flex justify-between items-start gap-2">
           <CardTitle className="text-lg line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-fuchsia-400 group-hover:bg-clip-text transition-all">
@@ -116,6 +117,7 @@ export function PromptCard({
           <ImprovePromptButton
             promptId={prompt.id}
             promptText={prompt.prompt_text}
+            onShowChange={setShowImprovement}
           />
           <button
             onClick={() => setShowRulesGenerator(!showRulesGenerator)}

@@ -8,15 +8,22 @@ interface ImprovePromptButtonProps {
   promptId: string;
   promptText: string;
   onPromptUpdated?: (newText: string) => void;
+  onShowChange?: (showing: boolean) => void;
 }
 
 export function ImprovePromptButton({
   promptId,
   promptText,
-  onPromptUpdated
+  onPromptUpdated,
+  onShowChange
 }: ImprovePromptButtonProps) {
   const [showImprovement, setShowImprovement] = useState(false);
   const updatePrompt = useUpdatePrompt();
+
+  const handleShowChange = (show: boolean) => {
+    setShowImprovement(show);
+    onShowChange?.(show);
+  };
 
   const handleAccept = async (improvedPrompt: string, improvementId?: string) => {
     try {
@@ -37,7 +44,7 @@ export function ImprovePromptButton({
         }
       });
 
-      setShowImprovement(false);
+      handleShowChange(false);
       toast.success('Prompt improved successfully!');
 
       if (onPromptUpdated) {
@@ -50,7 +57,7 @@ export function ImprovePromptButton({
   };
 
   const handleReject = () => {
-    setShowImprovement(false);
+    handleShowChange(false);
     toast.info('Kept original prompt');
   };
 
@@ -68,7 +75,7 @@ export function ImprovePromptButton({
 
   return (
     <button
-      onClick={() => setShowImprovement(true)}
+      onClick={() => handleShowChange(true)}
       className="inline-flex items-center gap-2 px-3 py-1.5 text-sm
                  text-purple-300 bg-purple-500/10 hover:bg-purple-500/20
                  border border-purple-500/30 rounded-lg transition-all
