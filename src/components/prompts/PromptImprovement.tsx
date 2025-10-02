@@ -154,7 +154,7 @@ export function PromptImprovement({
 
       {/* Comparison View */}
       {showComparison && (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {/* Original */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -167,7 +167,7 @@ export function PromptImprovement({
               </button>
             </div>
             <div className="p-4 bg-white/5 rounded-lg border border-white/10
-                            min-h-[200px] text-sm text-gray-300">
+                            text-sm text-gray-300 whitespace-pre-wrap">
               {originalPrompt}
             </div>
           </div>
@@ -202,13 +202,13 @@ export function PromptImprovement({
                 value={editedPrompt}
                 onChange={(e) => setEditedPrompt(e.target.value)}
                 className="w-full p-4 bg-green-500/10 border border-green-500/30 rounded-lg
-                           min-h-[200px] text-sm text-white focus:outline-none focus:ring-2
+                           text-sm text-white focus:outline-none focus:ring-2
                            focus:ring-green-500 focus:border-green-500 resize-y"
-                rows={10}
+                rows={12}
               />
             ) : (
               <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20
-                              min-h-[200px] text-sm text-white whitespace-pre-wrap">
+                              text-sm text-white whitespace-pre-wrap">
                 {result.improved_prompt}
               </div>
             )}
