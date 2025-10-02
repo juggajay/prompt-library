@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Check, X, Copy, Loader2, TrendingUp, Edit2 } from 'lucide-react';
+import { Sparkles, Check, X, Copy, Loader2, Edit2 } from 'lucide-react';
 import type { ImprovementResult } from '../../types/improvement';
 
 interface PromptImprovementProps {
@@ -124,22 +124,18 @@ export function PromptImprovement({
         <ScoreCard
           label="Clarity"
           score={result.clarity_score}
-          icon={<TrendingUp className="w-4 h-4" />}
         />
         <ScoreCard
           label="Specificity"
           score={result.specificity_score}
-          icon={<TrendingUp className="w-4 h-4" />}
         />
         <ScoreCard
           label="Structure"
           score={result.structure_score}
-          icon={<TrendingUp className="w-4 h-4" />}
         />
         <ScoreCard
           label="Overall"
           score={result.overall_score}
-          icon={<TrendingUp className="w-4 h-4" />}
           highlighted
         />
       </div>
@@ -316,12 +312,10 @@ export function PromptImprovement({
 function ScoreCard({
   label,
   score,
-  icon,
   highlighted = false
 }: {
   label: string;
   score: number;
-  icon: React.ReactNode;
   highlighted?: boolean;
 }) {
   const percentage = Math.round(score * 100);
