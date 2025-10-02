@@ -85,18 +85,29 @@ Return JSON with these fields.`
             role: 'system',
             content: `You are an expert at asking smart questions to understand project requirements.
 
-Based on the project analysis, generate 5-7 targeted questions. Questions should:
-- Be specific to the detected project type
+**IMPORTANT RULES:**
+1. If tech stack is ALREADY DETECTED (Vercel, Supabase, React, etc.), DO NOT ask about it
+2. Instead, make RECOMMENDATIONS based on detected tech
+3. Only ask about things that are MISSING or UNCLEAR
+4. Keep questions to 2-4 maximum if tech stack is clear
+5. Focus on scale, compliance, team size, and specific features
+
+Based on the project analysis, generate 2-4 targeted questions. Questions should:
+- SKIP anything already detected (technologies, frameworks, deployment)
 - Fill critical gaps in understanding
 - Be answerable in 1-2 sentences or multiple choice
 - Have clear purpose explained
 
-Return JSON:
+For detected technologies, include recommendations instead of questions:
 {
+  "recommendations": [
+    "I see you're using Vercel + Supabase. I'll include deployment best practices and edge function patterns.",
+    "Based on React being mentioned, I'll add component architecture and state management rules."
+  ],
   "questions": [
     {
       "id": "q1",
-      "text": "The question text",
+      "text": "The question text (only for MISSING info)",
       "category": "technical" | "functional" | "business" | "compliance",
       "reasoning": "Why we're asking this",
       "type": "text" | "choice" | "number",
@@ -104,7 +115,7 @@ Return JSON:
       "priority": "required" | "important" | "optional"
     }
   ],
-  "estimated_time": "3-5 minutes"
+  "estimated_time": "1-3 minutes"
 }`
           },
           {
@@ -150,21 +161,28 @@ Generate smart, adaptive questions to understand:
     }
 
     // Step 4: Save initial AI message
+    const recommendationsText = questions.recommendations?.length > 0
+      ? `\n\n**What I'll include:**\n${questions.recommendations.map((r: string) => `✅ ${r}`).join('\n')}`
+      : '';
+
+    const questionsText = questions.questions?.length > 0
+      ? `\n\nI just have ${questions.questions.length} quick question${questions.questions.length > 1 ? 's' : ''} to ask (${questions.estimated_time || '1-2 minutes'}):`
+      : '\n\nI have everything I need!';
+
     await supabase.from('rule_conversation_messages').insert({
       session_id: session.id,
       role: 'assistant',
       content: `I've analyzed your prompt and detected you're building a **${analysis.project_type.replace('_', ' ')}** ${
         analysis.detected_technologies.length > 0
-          ? `using ${analysis.detected_technologies.slice(0, 3).join(', ')}`
+          ? `using **${analysis.detected_technologies.slice(0, 5).join(', ')}**`
           : ''
-      }.
-
-To generate the best project-specific rules, I need to ask you ${questions.questions?.length || 0} quick questions. This will take about ${questions.estimated_time}.
+      }.${recommendationsText}${questionsText}
 
 Let's start! 🚀`,
       question_data: {
         isInitial: true,
         analysis: analysis,
+        recommendations: questions.recommendations,
         upcomingQuestions: questions.questions?.length || 0
       }
     });
@@ -173,6 +191,7 @@ Let's start! 🚀`,
       success: true,
       sessionId: session.id,
       analysis,
+      recommendations: questions.recommendations || [],
       questions: questions.questions,
       firstQuestion: questions.questions?.[0],
       estimatedTime: questions.estimated_time
