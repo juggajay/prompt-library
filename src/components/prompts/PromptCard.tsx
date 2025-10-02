@@ -99,6 +99,15 @@ export function PromptCard({
               <Trash2 className="w-4 h-4" />
               <span>Delete</span>
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowRulesGenerator(!showRulesGenerator)}
+              className="flex items-center gap-1 bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+            >
+              <Settings className="w-4 h-4" />
+              <span>{showRulesGenerator ? 'Hide Rules' : 'Generate Rules'}</span>
+            </Button>
           </div>
 
           <Button
@@ -113,22 +122,12 @@ export function PromptCard({
         </div>
 
         {/* AI Improvement Button */}
-        <div className="w-full flex gap-2">
+        <div className="w-full">
           <ImprovePromptButton
             promptId={prompt.id}
             promptText={prompt.prompt_text}
             onShowChange={setShowImprovement}
           />
-          <button
-            onClick={() => setShowRulesGenerator(!showRulesGenerator)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm
-                       text-blue-300 bg-blue-500/10 hover:bg-blue-500/20
-                       border border-blue-500/30 rounded-lg transition-all
-                       hover:shadow-lg hover:shadow-blue-500/20"
-          >
-            <Settings className="w-4 h-4" />
-            {showRulesGenerator ? 'Hide Rules' : 'Generate Rules'}
-          </button>
         </div>
 
         {/* Project Rules Generator */}
