@@ -377,26 +377,29 @@ Let's get started! 🚀`
                 </CardContent>
               </Card>
 
-              {/* Rules by Category */}
-              <div className="space-y-4">
+              {/* Rules by Category - Grid Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {Object.entries(generatedRules.rules || {}).map(([category, rules]: [string, any]) => (
-                  <Card key={category}>
-                    <CardHeader>
-                      <CardTitle className="capitalize">
-                        {category.replace('_', ' ')} ({rules.length} rules)
+                  <Card key={category} className="flex flex-col">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="capitalize text-base">
+                        {category.replace('_', ' ')} ({rules.length})
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
+                    <CardContent className="flex-1">
+                      <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                         {rules.map((rule: any, idx: number) => (
-                          <div
+                          <details
                             key={idx}
-                            className="p-4 bg-gray-800/50 rounded-lg border-l-4 border-purple-500"
+                            className="group bg-gray-800/50 rounded-lg border-l-4 border-purple-500"
                           >
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-semibold text-white">{rule.title}</h4>
+                            <summary className="p-3 cursor-pointer list-none flex items-start justify-between hover:bg-gray-800/70 transition-colors">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-white text-sm">{rule.title}</h4>
+                                <p className="text-xs text-gray-400 mt-1 line-clamp-1">{rule.description}</p>
+                              </div>
                               <span
-                                className={`px-2 py-1 text-xs rounded ${
+                                className={`ml-2 px-2 py-0.5 text-xs rounded flex-shrink-0 ${
                                   rule.priority === 'P0'
                                     ? 'bg-red-500/20 text-red-300'
                                     : rule.priority === 'P1'
@@ -408,19 +411,21 @@ Let's get started! 🚀`
                               >
                                 {rule.priority}
                               </span>
+                            </summary>
+                            <div className="px-3 pb-3 space-y-2">
+                              <p className="text-sm text-gray-300">{rule.description}</p>
+                              {rule.rationale && (
+                                <p className="text-xs text-gray-400 italic">
+                                  💭 Why: {rule.rationale}
+                                </p>
+                              )}
+                              {rule.example && (
+                                <pre className="text-xs bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto">
+                                  {rule.example}
+                                </pre>
+                              )}
                             </div>
-                            <p className="text-sm text-gray-300 mb-2">{rule.description}</p>
-                            {rule.rationale && (
-                              <p className="text-xs text-gray-400 italic mb-2">
-                                💭 Why: {rule.rationale}
-                              </p>
-                            )}
-                            {rule.example && (
-                              <pre className="text-xs bg-gray-900 text-gray-100 p-3 rounded mt-2 overflow-x-auto">
-                                {rule.example}
-                              </pre>
-                            )}
-                          </div>
+                          </details>
                         ))}
                       </div>
                     </CardContent>
@@ -428,49 +433,52 @@ Let's get started! 🚀`
                 ))}
               </div>
 
-              {/* Config Files */}
-              {generatedRules.config_files && Object.keys(generatedRules.config_files).length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Configuration Files</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {Object.entries(generatedRules.config_files).map(([filename, content]: [string, any]) => (
-                        <details key={filename} className="p-3 bg-gray-800/50 rounded-lg">
-                          <summary className="font-mono text-sm cursor-pointer text-purple-300 hover:text-purple-200">
-                            {filename}
-                          </summary>
-                          <pre className="text-xs bg-gray-900 text-gray-100 p-3 rounded mt-2 overflow-x-auto">
-                            {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
-                          </pre>
-                        </details>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Config Files & Tools - Side by Side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Config Files */}
+                {generatedRules.config_files && Object.keys(generatedRules.config_files).length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Configuration Files</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                        {Object.entries(generatedRules.config_files).map(([filename, content]: [string, any]) => (
+                          <details key={filename} className="bg-gray-800/50 rounded-lg">
+                            <summary className="p-2 font-mono text-xs cursor-pointer text-purple-300 hover:text-purple-200 hover:bg-gray-800/70 transition-colors rounded-lg">
+                              {filename}
+                            </summary>
+                            <pre className="text-xs bg-gray-900 text-gray-100 p-2 rounded m-2 overflow-x-auto">
+                              {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+                            </pre>
+                          </details>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-              {/* Recommended Tools */}
-              {generatedRules.recommended_tools && generatedRules.recommended_tools.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recommended Tools</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {generatedRules.recommended_tools.map((tool: string, idx: number) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-sm"
-                        >
-                          {tool}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                {/* Recommended Tools */}
+                {generatedRules.recommended_tools && generatedRules.recommended_tools.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Recommended Tools</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {generatedRules.recommended_tools.map((tool: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs"
+                          >
+                            {tool}
+                          </span>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           )}
         </div>
