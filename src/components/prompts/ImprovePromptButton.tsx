@@ -56,7 +56,7 @@ export function ImprovePromptButton({
 
   if (showImprovement) {
     return (
-      <div className="p-6 border-2 border-purple-500/30 rounded-xl bg-purple-500/5 backdrop-blur-sm">
+      <div className="p-6 border-2 border-purple-500/30 rounded-xl bg-purple-500/5 backdrop-blur-sm w-full col-span-full">
         <PromptImprovement
           originalPrompt={promptText}
           onAccept={handleAccept}

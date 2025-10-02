@@ -120,7 +120,7 @@ export function PromptImprovement({
   return (
     <div className="space-y-6">
       {/* Score Cards */}
-      <div className="grid grid-cols-4 gap-4 w-full">
+      <div className="grid grid-cols-4 gap-2 w-full">
         <ScoreCard
           label="Clarity"
           score={result.clarity_score}
@@ -335,18 +335,17 @@ function ScoreCard({
 
   return (
     <div
-      className={`p-4 rounded-lg border h-full flex flex-col ${
+      className={`p-2 rounded-lg border h-full flex flex-col justify-center ${
         highlighted
           ? 'bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/30'
           : 'bg-white/5 border-white/10'
       }`}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="text-center">
+        <div className={`text-xl font-bold bg-gradient-to-r ${color} bg-clip-text text-transparent mb-1`}>
+          {percentage}%
+        </div>
         <span className="text-xs font-medium text-gray-400">{label}</span>
-        <div className="text-gray-500">{icon}</div>
-      </div>
-      <div className={`text-2xl font-bold bg-gradient-to-r ${color} bg-clip-text text-transparent`}>
-        {percentage}%
       </div>
     </div>
   );
