@@ -163,7 +163,7 @@ export function PromptImprovement({
               </button>
             </div>
             <div className="p-4 bg-white/5 rounded-lg border border-white/10
-                            text-sm text-gray-300 whitespace-pre-wrap max-h-96 overflow-y-auto">
+                            text-sm text-gray-300 whitespace-pre-wrap">
               {originalPrompt}
             </div>
           </div>
@@ -199,11 +199,12 @@ export function PromptImprovement({
                 onChange={(e) => setEditedPrompt(e.target.value)}
                 className="w-full p-4 bg-green-500/10 border border-green-500/30 rounded-lg
                            text-sm text-white focus:outline-none focus:ring-2
-                           focus:ring-green-500 focus:border-green-500 resize-y h-96"
+                           focus:ring-green-500 focus:border-green-500 resize-y"
+                rows={20}
               />
             ) : (
               <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20
-                              text-sm text-white whitespace-pre-wrap max-h-96 overflow-y-auto">
+                              text-sm text-white whitespace-pre-wrap">
                 {result.improved_prompt}
               </div>
             )}
