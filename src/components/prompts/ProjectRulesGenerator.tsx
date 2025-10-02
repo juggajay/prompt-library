@@ -102,13 +102,13 @@ Let's get started! 🚀`
     }
   };
 
-  const submitAnswer = async () => {
-    if (!userInput.trim() || !currentQuestion || !sessionId) return;
+  const submitAnswer = async (answerText?: string) => {
+    const answer = answerText || userInput;
+    if (!answer.trim() || !currentQuestion || !sessionId) return;
 
-    const userMessage = { role: 'user' as const, content: userInput };
+    const userMessage = { role: 'user' as const, content: answer };
     setMessages((prev) => [...prev, userMessage]);
 
-    const answer = userInput;
     setUserInput('');
     setLoading(true);
 
@@ -318,13 +318,7 @@ Let's get started! 🚀`
                     {currentQuestion.options.map((option, idx) => (
                       <button
                         key={idx}
-                        onClick={() => {
-                          setUserInput(option);
-                          setTimeout(() => {
-                            const btn = document.querySelector('[data-submit-btn]') as HTMLButtonElement;
-                            btn?.click();
-                          }, 100);
-                        }}
+                        onClick={() => submitAnswer(option)}
                         disabled={loading}
                         className="p-3 text-left border-2 border-gray-600 rounded-lg hover:border-purple-500 hover:bg-purple-500/10 transition-all disabled:opacity-50 text-gray-200"
                       >
