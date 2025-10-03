@@ -8,6 +8,7 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
+import { DocReader } from './pages/DocReader';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Analytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doc-reader"
+              element={
+                <ProtectedRoute>
+                  <DocReader />
                 </ProtectedRoute>
               }
             />

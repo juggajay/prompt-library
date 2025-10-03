@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, User, BookOpen, BarChart3, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, BookOpen, BarChart3, LayoutDashboard, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 
@@ -45,6 +45,17 @@ export function Navbar() {
                   >
                     <BarChart3 className="w-4 h-4" />
                     <span>Analytics</span>
+                  </Link>
+                  <Link
+                    to="/doc-reader"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                      location.pathname === '/doc-reader'
+                        ? 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-white'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Doc Reader</span>
                   </Link>
                 </div>
 
