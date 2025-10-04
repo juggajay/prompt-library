@@ -1,5 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-const { Inngest } = require('inngest');
+import { createClient } from '@supabase/supabase-js';
+import { Inngest } from 'inngest';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
@@ -32,14 +32,19 @@ function isValidURL(urlString) {
   }
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
+  console.log('[API] Request received:', req.method, req.url);
+
   if (req.method !== 'POST') {
+    console.log('[API] Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    console.log('[API] Processing POST request...');
     // Get auth token from header
     const authHeader = req.headers.authorization;
+    console.log('[API] Auth header present:', !!authHeader);
     if (!authHeader) {
       return res.status(401).json({ error: 'Unauthorized', code: 'UNAUTHORIZED' });
     }
@@ -153,4 +158,4 @@ module.exports = async function handler(req, res) {
       code: 'INTERNAL_ERROR',
     });
   }
-};
+}
