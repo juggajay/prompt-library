@@ -1,6 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { Inngest } from 'inngest';
+const { createClient } = require('@supabase/supabase-js');
+const { Inngest } = require('inngest');
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
@@ -12,7 +11,7 @@ const inngest = new Inngest({
 });
 
 // Simple URL hash function
-function hashURL(url: string): string {
+function hashURL(url) {
   let hash = 0;
   const str = new URL(url).href;
   for (let i = 0; i < str.length; i++) {
@@ -24,7 +23,7 @@ function hashURL(url: string): string {
 }
 
 // Simple URL validation
-function isValidURL(urlString: string): boolean {
+function isValidURL(urlString) {
   try {
     new URL(urlString);
     return true;
@@ -33,7 +32,7 @@ function isValidURL(urlString: string): boolean {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -154,4 +153,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       code: 'INTERNAL_ERROR',
     });
   }
-}
+};
