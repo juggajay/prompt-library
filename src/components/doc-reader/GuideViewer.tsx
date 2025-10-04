@@ -145,7 +145,9 @@ export function GuideViewer({ guideId }: GuideViewerProps) {
               a: ({ href, children }) => <a href={href} className="text-purple-400 hover:text-purple-300 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
             }}
           >
-            {guide.content?.processed_content || ''}
+            {typeof guide.content?.processed_content === 'object'
+              ? (guide.content?.processed_content as any)?.markdown || ''
+              : guide.content?.processed_content || ''}
           </ReactMarkdown>
         </div>
 
