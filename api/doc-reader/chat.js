@@ -114,7 +114,7 @@ Answer questions based on this documentation. If the answer is not in the docume
           role: 'user',
           content: question,
         },
-      },
+      ],
       temperature: 0.7,
       max_tokens: 1000,
     });
