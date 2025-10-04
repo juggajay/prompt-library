@@ -86,7 +86,7 @@ export default async function handler(req, res) {
       const { data: existing } = await supabase
         .from('guides')
         .select('id, processing_status, title')
-        .eq('source_url', url)
+        .eq('url', url)
         .eq('user_id', user.id)
         .eq('processing_status', 'completed')
         .maybeSingle();
@@ -103,15 +103,12 @@ export default async function handler(req, res) {
     }
 
     // Create new guide record
-    const { data: guide, error: createError } = await supabase
+    const { data: guide, error: createError} = await supabase
       .from('guides')
       .insert({
-        source_url: url,
-        source_hash: urlHash,
+        url: url,
         user_id: user.id,
         processing_status: 'queued',
-        ai_provider: 'openai',
-        ai_model: 'gpt-4o',
       })
       .select()
       .single();
