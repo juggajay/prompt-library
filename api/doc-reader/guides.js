@@ -1,10 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -36,8 +35,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get query parameters
     const { status, limit = '50', offset = '0' } = req.query;
-    const parsedLimit = parseInt(limit as string);
-    const parsedOffset = parseInt(offset as string);
+    const parsedLimit = parseInt(limit);
+    const parsedOffset = parseInt(offset);
 
     // Build query
     let query = supabase
