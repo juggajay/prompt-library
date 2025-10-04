@@ -1,7 +1,29 @@
-import { createClient } from '@supabase/supabase-js';
+// Lazy imports to avoid top-level execution issues
+let createClient;
+let Inngest;
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Lazy library initialization
+async function getSupabaseClient() {
+  if (!createClient) {
+    const supabaseLib = await import('@supabase/supabase-js');
+    createClient = supabaseLib.createClient;
+  }
+  return createClient;
+}
+
+async function getInngest() {
+  if (!Inngest) {
+    const inngestLib = await import('inngest');
+    Inngest = inngestLib.Inngest;
+  }
+  return new Inngest({
+    id: 'doc-reader',
+    name: 'Documentation Reader',
+  });
+}
 
 // Simple URL hash function
 function hashURL(url) {
@@ -26,26 +48,25 @@ function isValidURL(urlString) {
 }
 
 export default async function handler(req, res) {
-  console.log('[PROCESS API] Request received:', req.method, req.url);
+  console.log('[API] Request received:', req.method, req.url);
 
   if (req.method !== 'POST') {
-    console.log('[PROCESS API] Method not allowed:', req.method);
+    console.log('[API] Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    console.log('[PROCESS API] Processing POST request...');
-
+    console.log('[API] Processing POST request...');
     // Get auth token from header
     const authHeader = req.headers.authorization;
-    console.log('[PROCESS API] Auth header present:', !!authHeader);
-
+    console.log('[API] Auth header present:', !!authHeader);
     if (!authHeader) {
       return res.status(401).json({ error: 'Unauthorized', code: 'UNAUTHORIZED' });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    const _createClient = await getSupabaseClient();
+    const supabase = _createClient(supabaseUrl, supabaseKey, {
       global: {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,13 +107,12 @@ export default async function handler(req, res) {
       const { data: existing } = await supabase
         .from('guides')
         .select('id, processing_status, title')
-        .eq('url', url)
+        .eq('source_url', url)
         .eq('user_id', user.id)
         .eq('processing_status', 'completed')
-        .maybeSingle();
+        .single();
 
       if (existing) {
-        console.log('[PROCESS API] Guide already exists:', existing.id);
         return res.status(200).json({
           id: existing.id,
           status: 'completed',
@@ -103,52 +123,48 @@ export default async function handler(req, res) {
     }
 
     // Create new guide record
-    const { data: guide, error: createError} = await supabase
+    const { data: guide, error: createError } = await supabase
       .from('guides')
       .insert({
-        url: url,
+        source_url: url,
+        source_hash: urlHash,
         user_id: user.id,
         processing_status: 'queued',
+        ai_provider: 'openai',
+        ai_model: 'gpt-4o',
       })
       .select()
       .single();
 
     if (createError) {
-      console.error('[PROCESS API] Failed to create guide:', createError);
+      console.error('Failed to create guide:', createError);
       return res.status(500).json({
         error: 'Failed to create guide',
         code: 'CREATE_FAILED',
-        details: createError.message,
       });
     }
 
-    console.log('[PROCESS API] Guide created successfully:', guide.id);
+    // Queue background processing job
+    // TODO: Re-enable Inngest for production
+    // const inngest = getInngest();
+    // await inngest.send({
+    //   name: 'guide/process.requested',
+    //   data: {
+    //     guideId: guide.id,
+    //     url,
+    //     userId: user.id,
+    //   },
+    // });
 
-    // Process synchronously (wait for completion)
-    // Import dynamically to avoid issues
-    const { processDocumentation } = await import('./lib/processor.js');
+    console.log('[API] Would queue processing for guide:', guide.id);
 
-    try {
-      const result = await processDocumentation(url, guide.id, supabase);
-      console.log('[PROCESS API] Processing completed for guide:', guide.id);
-
-      return res.status(200).json({
-        id: guide.id,
-        status: 'completed',
-        title: result.title,
-        message: 'Guide created successfully',
-      });
-    } catch (processingError) {
-      console.error('[PROCESS API] Processing failed:', processingError);
-      return res.status(500).json({
-        error: 'Failed to process documentation',
-        code: 'PROCESSING_FAILED',
-        details: processingError.message,
-        guideId: guide.id,
-      });
-    }
+    return res.status(202).json({
+      id: guide.id,
+      status: 'queued',
+      message: 'Processing started',
+    });
   } catch (error) {
-    console.error('[PROCESS API] Error processing URL:', error);
+    console.error('Error processing URL:', error);
 
     if (error instanceof SyntaxError) {
       return res.status(400).json({
@@ -160,7 +176,6 @@ export default async function handler(req, res) {
     return res.status(500).json({
       error: 'Internal server error',
       code: 'INTERNAL_ERROR',
-      details: error.message,
     });
   }
 }
