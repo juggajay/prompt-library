@@ -1,10 +1,37 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { inngest } from '../../src/inngest/client';
-import { processUrlSchema, hashURL } from '../../src/lib/doc-reader/validators';
+import { Inngest } from 'inngest';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Create Inngest client
+const inngest = new Inngest({
+  id: 'doc-reader',
+  name: 'Documentation Reader',
+});
+
+// Simple URL hash function
+function hashURL(url: string): string {
+  let hash = 0;
+  const str = new URL(url).href;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Simple URL validation
+function isValidURL(urlString: string): boolean {
+  try {
+    new URL(urlString);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -37,17 +64,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Parse and validate request
-    const validation = processUrlSchema.safeParse(req.body);
+    const { url, forceRefresh = false } = req.body;
 
-    if (!validation.success) {
+    if (!url || typeof url !== 'string') {
       return res.status(400).json({
-        error: 'Invalid request',
+        error: 'URL is required',
         code: 'INVALID_REQUEST',
-        details: validation.error.issues,
       });
     }
 
-    const { url, forceRefresh } = validation.data;
+    if (!isValidURL(url)) {
+      return res.status(400).json({
+        error: 'Please enter a valid URL',
+        code: 'INVALID_REQUEST',
+      });
+    }
+
     const urlHash = hashURL(url);
 
     // Check if URL already processed (unless force refresh)
