@@ -1,10 +1,62 @@
+import { useState, useRef, useEffect } from 'react';
+import { askQuestion } from '../../services/docReaderService';
+
 interface ChatInterfaceProps {
   guideId: string;
 }
 
-export function ChatInterface({ guideId: _guideId }: ChatInterfaceProps) {
-  const messages: any[] = [];
-  const isLoading = false;
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export function ChatInterface({ guideId }: ChatInterfaceProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [question, setQuestion] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!question.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: question,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setQuestion('');
+    setIsLoading(true);
+
+    try {
+      const response = await askQuestion(guideId, question);
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response.answer,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-[600px] border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm">
@@ -57,20 +109,24 @@ export function ChatInterface({ guideId: _guideId }: ChatInterfaceProps) {
             </div>
           </div>
         )}
+
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <form className="border-t border-white/10 p-4">
+      <form onSubmit={handleSubmit} className="border-t border-white/10 p-4">
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Chat functionality coming soon..."
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask a question about this documentation..."
             className="flex-1 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-            disabled
+            disabled={isLoading}
           />
           <button
             type="submit"
-            disabled
+            disabled={!question.trim() || isLoading}
             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-lg text-sm font-medium hover:from-purple-500 hover:to-fuchsia-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/50"
           >
             Send

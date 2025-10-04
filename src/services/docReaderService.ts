@@ -119,3 +119,29 @@ export async function deleteGuide(guideId: string): Promise<void> {
     throw new Error(error.error || 'Failed to delete guide');
   }
 }
+
+export interface ChatResponse {
+  answer: string;
+  question: string;
+  guideId: string;
+}
+
+/**
+ * Ask a question about a guide
+ */
+export async function askQuestion(guideId: string, question: string): Promise<ChatResponse> {
+  const headers = await getAuthHeader();
+
+  const response = await fetch('/api/doc-reader/chat', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ guideId, question }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to get answer');
+  }
+
+  return response.json();
+}
