@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sparkles, Check, X, Copy, Loader2, Edit2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import type { ImprovementResult } from '../../types/improvement';
 
 interface PromptImprovementProps {
@@ -204,8 +205,11 @@ export function PromptImprovement({
               />
             ) : (
               <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20
-                              text-sm text-white whitespace-pre-wrap">
-                {result.improved_prompt}
+                              text-sm text-white prose prose-invert prose-sm max-w-none
+                              prose-headings:text-green-400 prose-h1:text-xl prose-h2:text-lg
+                              prose-h3:text-base prose-code:text-green-300 prose-code:bg-black/30
+                              prose-pre:bg-black/50 prose-a:text-blue-400">
+                <ReactMarkdown>{result.improved_prompt}</ReactMarkdown>
               </div>
             )}
           </div>
