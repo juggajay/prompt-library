@@ -18,6 +18,7 @@ export interface ImprovementResult {
     agent_name?: string;
     agent_description?: string;
     provider?: 'anthropic' | 'openai';
+    attempts?: number;
   };
 }
 

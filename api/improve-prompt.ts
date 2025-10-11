@@ -5,7 +5,7 @@ const PROMPT_ENGINEER_AGENT = {
   name: 'prompt-engineer',
   description:
     'Expert prompt engineer specializing in advanced prompting techniques, LLM optimization, and AI system design. Masters chain-of-thought, constitutional AI, and production prompt strategies. Use when building AI features, improving agent performance, or crafting system prompts.',
-  model: 'gpt-4o-mini'
+  model: 'gpt-4o'
 } as const;
 
 const PROMPT_ENGINEER_SYSTEM_PROMPT = `
@@ -22,6 +22,7 @@ Core Capabilities
 - Production systems: template management, conditional logic, localization, version control, rollback strategies, RAG optimization
 - Agent orchestration: persona design, collaboration patterns, task decomposition, tool selection, memory management
 - Domain expertise: business, creative, technical, code generation, and evaluation with focus on reliability and measurable outcomes
+- You must always deliver an enhanced prompt. Never return the original prompt verbatim. If the source content is already strong, push the quality further by tightening language, enriching context, restructuring format, or adding evaluation criteria so the improvement is unmistakable.
 
 Your Improvement Process
 1. Analyze the original prompt for clarity, structure, specificity, context, constraints, and output format
@@ -39,8 +40,9 @@ When Improving Prompts
 - Add relevant context and background information
 - Consider edge cases and failure modes
 - Optimize for clarity, specificity, and effectiveness
-- Don't over-complicate simple prompts
+- Don't over-complicate simple prompts, but still make incremental clarity or formatting upgrades so the output differs from the input
 - Apply appropriate advanced techniques (CoT, self-consistency, etc.) based on complexity
+- Document 3-6 concrete improvements in the changes_made list, focusing on measurable upgrades (structure, clarity, context, safety, format, examples, evaluation criteria, etc.)
 
 Output Structure for improved_prompt
 Your improved prompt should be comprehensive and production-ready. Structure it with clear markdown formatting:
@@ -55,15 +57,18 @@ Your improved prompt should be comprehensive and production-ready. Structure it 
 [Clear, specific instructions]
 
 ## Format
-[Expected output format with examples]
+[Expected output format with examples or schema]
 
 ## Constraints
-[Important limitations or requirements]
+[Important limitations, guardrails, and safety requirements]
+
+## Evaluation
+[Quality criteria, success checks, or reviewer checklist]
 
 ## Examples (if helpful)
 [Few-shot examples demonstrating desired behavior]
 
-Note: Adapt this structure based on the prompt's complexity. Simple prompts may not need all sections.
+Note: Adapt this structure based on the prompt's complexity. Simple prompts may not need every subsection, but the rewritten prompt must still be more structured than the original.
 
 Scoring Guidance
 Provide honest scores (0.0-1.0) reflecting the improved prompt's quality:
@@ -118,6 +123,113 @@ function normalizeImprovementResult(rawResult: any, fallbackPrompt: string) {
   };
 }
 
+interface OpenAIUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+async function requestImprovement(
+  prompt: string,
+  apiKey: string,
+  attempt: number
+): Promise<{ rawResult: any; model: string; usage: OpenAIUsage }> {
+  const retrySuffix =
+    attempt > 1
+      ? '\n\nImportant: The previous attempt did not provide a meaningfully different prompt. Produce a significantly improved version with new structure, refined language, explicit evaluation criteria, and concrete adjustments. DO NOT repeat large portions of the original text verbatim.'
+      : '';
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: PROMPT_ENGINEER_AGENT.model,
+      messages: [
+        {
+          role: 'system',
+          content: PROMPT_ENGINEER_SYSTEM_PROMPT
+        },
+        {
+          role: 'user',
+          content: `Improve this prompt while preserving the original intent. Return ONLY the JSON object described in the system prompt.\n\nOriginal prompt:\n${prompt}${retrySuffix}`
+        }
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'prompt_improvement',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              improved_prompt: { type: 'string' },
+              changes_made: {
+                type: 'array',
+                items: { type: 'string' }
+              },
+              reasoning: { type: 'string' },
+              clarity_score: { type: 'number' },
+              specificity_score: { type: 'number' },
+              structure_score: { type: 'number' },
+              overall_score: { type: 'number' }
+            },
+            required: [
+              'improved_prompt',
+              'changes_made',
+              'reasoning',
+              'clarity_score',
+              'specificity_score',
+              'structure_score',
+              'overall_score'
+            ],
+            additionalProperties: false
+          }
+        }
+      },
+      temperature: 0.3,
+      max_tokens: 2000
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.error?.message || 'OpenAI API request failed');
+  }
+
+  const data = await response.json();
+  const messageContent = data?.choices?.[0]?.message?.content;
+
+  if (!messageContent) {
+    throw new Error('OpenAI response missing content');
+  }
+
+  let rawResult: any;
+  try {
+    rawResult = JSON.parse(messageContent);
+  } catch (parseError) {
+    console.error('Failed to parse OpenAI response:', messageContent);
+    throw new Error('Failed to parse OpenAI response as JSON');
+  }
+
+  const usage = data.usage || {};
+  const promptTokens = usage.prompt_tokens ?? 0;
+  const completionTokens = usage.completion_tokens ?? 0;
+  const totalTokens = usage.total_tokens ?? promptTokens + completionTokens;
+
+  return {
+    rawResult,
+    model: data.model || PROMPT_ENGINEER_AGENT.model,
+    usage: {
+      prompt_tokens: promptTokens,
+      completion_tokens: completionTokens,
+      total_tokens: totalTokens
+    }
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -157,106 +269,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     void promptHash; // reserved for future caching
 
     const startTime = Date.now();
-    console.log('Calling OpenAI GPT-4o-mini for prompt improvement...');
+    console.log('Calling OpenAI GPT-4o for prompt improvement...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: PROMPT_ENGINEER_AGENT.model,
-        messages: [
-          {
-            role: 'system',
-            content: PROMPT_ENGINEER_SYSTEM_PROMPT
-          },
-          {
-            role: 'user',
-            content: `Improve this prompt while preserving the original intent. Return ONLY the JSON object described in the system prompt.\n\nOriginal prompt:\n${prompt}`
-          }
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'prompt_improvement',
-            strict: true,
-            schema: {
-              type: 'object',
-              properties: {
-                improved_prompt: { type: 'string' },
-                changes_made: {
-                  type: 'array',
-                  items: { type: 'string' }
-                },
-                reasoning: { type: 'string' },
-                clarity_score: { type: 'number' },
-                specificity_score: { type: 'number' },
-                structure_score: { type: 'number' },
-                overall_score: { type: 'number' }
-              },
-              required: [
-                'improved_prompt',
-                'changes_made',
-                'reasoning',
-                'clarity_score',
-                'specificity_score',
-                'structure_score',
-                'overall_score'
-              ],
-              additionalProperties: false
-            }
-          }
-        },
-        temperature: 0.3,
-        max_tokens: 4000
-      })
-    });
+    const MAX_ATTEMPTS = 2;
+    let attempt = 1;
+    let attemptsUsed = 0;
+    let latestModel = PROMPT_ENGINEER_AGENT.model;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    let totalTokens = 0;
+    let finalResult: ReturnType<typeof normalizeImprovementResult> | null = null;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData?.error?.message || 'OpenAI API request failed');
+    while (attempt <= MAX_ATTEMPTS) {
+      console.log(`Prompt improvement attempt ${attempt}`);
+      const improvement = await requestImprovement(prompt, openaiApiKey, attempt);
+
+      latestModel = improvement.model;
+      totalPromptTokens += improvement.usage.prompt_tokens;
+      totalCompletionTokens += improvement.usage.completion_tokens;
+      totalTokens += improvement.usage.total_tokens;
+
+      const candidate = normalizeImprovementResult(improvement.rawResult, prompt);
+      attemptsUsed = attempt;
+
+      if (candidate.improved_prompt.trim() !== prompt.trim()) {
+        finalResult = candidate;
+        break;
+      }
+
+      if (attempt === MAX_ATTEMPTS) {
+        console.warn('AI returned a prompt without detectable improvements after maximum retries.');
+        finalResult = candidate;
+        break;
+      }
+
+      console.warn('AI returned a prompt without sufficient changes. Retrying with stronger instructions.');
+      attempt += 1;
     }
 
-    const data = await response.json();
-    const messageContent = data?.choices?.[0]?.message?.content;
-
-    if (!messageContent) {
-      throw new Error('OpenAI response missing content');
+    if (!finalResult) {
+      throw new Error('AI did not return an improved prompt');
     }
 
-    let rawResult: any;
-    try {
-      rawResult = JSON.parse(messageContent);
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', messageContent);
-      throw new Error('Failed to parse OpenAI response as JSON');
-    }
-
-    const usage = data.usage || {};
-    const promptTokens = usage.prompt_tokens ?? 0;
-    const completionTokens = usage.completion_tokens ?? 0;
-    const totalTokens = usage.total_tokens ?? promptTokens + completionTokens;
-
-    const inputCost = (promptTokens / 1_000_000) * 0.15; // $0.15 per 1M tokens
-    const outputCost = (completionTokens / 1_000_000) * 0.6; // $0.60 per 1M tokens
+    const inputCost = (totalPromptTokens / 1_000_000) * 5; // $5.00 per 1M tokens
+    const outputCost = (totalCompletionTokens / 1_000_000) * 15; // $15.00 per 1M tokens
     const totalCost = inputCost + outputCost;
 
     const latency = Date.now() - startTime;
-    const result = normalizeImprovementResult(rawResult, prompt);
 
     return res.status(200).json({
-      ...result,
+      ...finalResult,
       cached: false,
       metadata: {
-        model: data.model || PROMPT_ENGINEER_AGENT.model,
+        model: latestModel,
         tokens: totalTokens,
         cost: totalCost.toFixed(6),
         latency_ms: latency,
         agent_name: PROMPT_ENGINEER_AGENT.name,
         agent_description: PROMPT_ENGINEER_AGENT.description,
-        provider: 'openai'
+        provider: 'openai',
+        attempts: attemptsUsed
       }
     });
   } catch (error: any) {
