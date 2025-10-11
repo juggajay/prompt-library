@@ -1,4 +1,3 @@
-import './_lib/loadEnv';
 import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
