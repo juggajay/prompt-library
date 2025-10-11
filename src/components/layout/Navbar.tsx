@@ -58,15 +58,15 @@ export function Navbar() {
                     <span>Doc Reader</span>
                   </Link>
                   <Link
-                    to="/prd-generator"
+                    to="/assistant"
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                      location.pathname === '/prd-generator'
+                      location.pathname.startsWith('/assistant')
                         ? 'bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 border border-purple-500/30 text-white'
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>PRD Generator</span>
+                    <span>Assistant</span>
                   </Link>
                 </div>
 

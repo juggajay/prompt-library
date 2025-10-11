@@ -9,6 +9,9 @@ import { Signup } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { DocReader } from './pages/DocReader';
+import { AssistantOverview } from './pages/AssistantOverview';
+import { ContextBuilder } from './pages/ContextBuilder';
+import { ArchitecturePlanner } from './pages/ArchitecturePlanner';
 import { PRDGenerator } from './pages/PRDGenerator';
 
 const queryClient = new QueryClient({
@@ -52,6 +55,38 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DocReader />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assistant"
+              element={
+                <ProtectedRoute>
+                  <AssistantOverview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assistant/context"
+              element={
+                <ProtectedRoute>
+                  <ContextBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assistant/architecture"
+              element={
+                <ProtectedRoute>
+                  <ArchitecturePlanner />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assistant/prd-generator"
+              element={
+                <ProtectedRoute>
+                  <PRDGenerator />
                 </ProtectedRoute>
               }
             />
