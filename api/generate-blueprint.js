@@ -1,7 +1,5 @@
-import './_lib/loadEnv';
 import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const supabaseUrl =
   process.env.SUPABASE_URL ||
@@ -24,21 +22,13 @@ const openaiApiKey = process.env.OPENAI_API_KEY || '';
 
 const openai = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
 
-interface TaskRequestBody {
-  projectName: string;
-  projectType: string;
-  description: string;
-  architectureSummary: string;
-  goals: string[];
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   if (!openai || !supabaseUrl || (!supabaseServiceKey && !supabaseAnonKey)) {
-    console.error('Missing configuration for CLI task generation');
+    console.error('Missing configuration for blueprint generation');
     return res.status(500).json({ error: 'Server configuration incomplete' });
   }
 
@@ -65,44 +55,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const body = (req.body || {}) as TaskRequestBody;
-    if (!body.projectName || !body.projectType || !body.description) {
+    const body = req.body || {};
+    if (!body.projectName || !body.projectType || !body.description || !body.targetAudience) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const goals = (body.goals || []).filter(Boolean);
+    const constraints = (body.constraints || []).filter(Boolean);
 
     const systemPrompt = `
-You are Nova, a senior engineer guiding a new developer through building their project using CLI copilots (Claude Code, OpenAI Codex, etc.).
-Create a focused task plan that can be executed in sequence.
+You are Nova, a friendly senior product engineer mentoring a new developer.
+Generate an architecture starter kit for the project. Keep explanations supportive and concise, avoid jargon.
 
 Return a JSON object with:
-- tasks: array of {
-    title,
-    description,
-    cliPrompt,
-    status (default "todo"),
-    tags (array of strings),
-    effort ("xs"|"s"|"m"|"l")
-  }
-- summary: string (one-paragraph overview)
-- recommendations: array of strings (tips for working with CLI assistants)
+- architecture.summary (string)
+- architecture.components (array of { name, responsibility, notes })
+- architecture.dataFlow (array of { step, detail })
+- architecture.techStack (array of strings)
+- architecture.recommendations (array of { title, description })
+- nextSteps (array of strings)
+- cliPrompts (array of { label, command, notes })
 
 Guidelines:
-- Produce 6-8 tasks max.
-- CLI prompts should be copy-ready (include context and desired output format).
-- Use warm, encouraging tone in descriptions.
-- Include at least one testing or QA focused task.
-- Suggest small, quick wins first to build confidence.
+- Assume the developer will copy prompts into CLI copilots (Claude Code, Codex).
+- Highlight 4-6 core components max.
+- Data flow should be linear, beginner-friendly steps.
+- Tech stack items should match the project type and stay within modern, well-supported tools.
+- Commands should reference npm/yarn, supabase, or vercel where relevant.
+- Keep JSON compact but readable.
     `.trim();
 
     const userPrompt = `
-Project: ${body.projectName}
-Type: ${body.projectType}
-Audience: ${body.description}
-Architecture Summary: ${body.architectureSummary || 'Not provided'}
+Project Name: ${body.projectName}
+Project Type: ${body.projectType}
+Audience: ${body.targetAudience}
+Description: ${body.description}
 Goals:
 - ${goals.join('\n- ') || 'No specific goals provided'}
+
+Constraints:
+- ${constraints.join('\n- ') || 'No constraints provided'}
     `.trim();
 
     const completion = await openai.chat.completions.create({
@@ -116,46 +108,80 @@ Goals:
     });
 
     const content = completion.choices[0]?.message?.content || '{}';
-    let tasks: Record<string, unknown>;
+    let blueprint;
 
     try {
-      tasks = JSON.parse(content);
+      blueprint = JSON.parse(content);
     } catch (error) {
-      console.error('CLI task JSON parse error', error);
+      console.error('Blueprint JSON parse error', error);
       return res.status(500).json({ error: 'Failed to parse AI response' });
     }
 
-    return res.status(200).json(tasks);
+    let blueprintId;
+    try {
+      const { data: record, error: insertError } = await supabase
+        .from('project_blueprints')
+        .insert({
+          user_id: user.id,
+          title: body.projectName,
+          goal: goals.join('\n'),
+          audience: body.targetAudience,
+          stage: 'draft',
+          architecture: blueprint.architecture ?? {},
+          overview: {
+            description: body.description,
+            goals,
+            constraints,
+          },
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        console.warn('Failed to persist blueprint', insertError);
+      } else {
+        blueprintId = record?.id;
+      }
+    } catch (dbError) {
+      console.warn('Unexpected error inserting blueprint', dbError);
+    }
+
+    return res.status(200).json({
+      blueprintId,
+      ...blueprint,
+    });
   } catch (error) {
-    console.error('CLI task generation error', error);
+    console.error('Blueprint generation error', error);
     return res.status(500).json({
-      error: 'Failed to generate CLI plan',
+      error: 'Failed to generate project blueprint',
       details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
 
-function createSupabaseClient(token: string) {
+function createSupabaseClient(token) {
   const isServiceRole = Boolean(supabaseServiceKey);
 
   if (isServiceRole) {
     return {
       client: createClient(supabaseUrl, supabaseServiceKey),
       isServiceRole: true,
-    } as const;
+    };
   }
 
   if (!supabaseAnonKey) {
-    return { client: null, isServiceRole: false } as const;
+    return { client: null, isServiceRole: false };
   }
 
   return {
     client: createClient(supabaseUrl, supabaseAnonKey, {
       global: {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
       auth: { persistSession: false },
     }),
     isServiceRole: false,
-  } as const;
+  };
 }
