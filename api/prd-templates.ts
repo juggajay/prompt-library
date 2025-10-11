@@ -1,8 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  '';
+
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  '';
+
+const supabaseAnonKey =
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  '';
 
 const DEFAULT_TEMPLATES = [
   {
@@ -61,18 +75,10 @@ const DEFAULT_TEMPLATES = [
   },
 ];
 
-function getClient(token: string) {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-    auth: { persistSession: false },
-  });
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return res.status(500).json({ error: 'Supabase environment variables are missing' });
+  if (!supabaseUrl || (!supabaseServiceKey && !supabaseAnonKey)) {
+    console.error('PRD templates missing Supabase configuration');
+    return res.status(500).json({ error: 'Supabase configuration is missing' });
   }
 
   const authHeader = req.headers.authorization;
@@ -85,13 +91,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const supabase = getClient(token);
+  const { client: supabase, isServiceRole } = createSupabaseClient(token);
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not configured' });
+  }
+
+  const { data: userData, error: authError } = isServiceRole
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
+
+  const user = userData?.user;
+
+  if (authError || !user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   if (req.method === 'GET') {
     try {
       const { data: templates, error } = await supabase
         .from('prd_templates')
         .select('*')
+        .or(`is_public.eq.true,created_by.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -118,12 +138,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const { name, description, project_type, structure, variables, is_public = false } = req.body || {};
+      const { name, description, project_type, structure, variables, is_public = false } =
+        req.body || {};
 
       if (!name || !project_type || !structure) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -158,4 +174,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+function createSupabaseClient(token: string) {
+  const isServiceRole = Boolean(supabaseServiceKey);
+
+  if (isServiceRole) {
+    return {
+      client: createClient(supabaseUrl, supabaseServiceKey),
+      isServiceRole: true,
+    } as const;
+  }
+
+  return {
+    client: createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: { persistSession: false },
+    }),
+    isServiceRole: false,
+  } as const;
 }

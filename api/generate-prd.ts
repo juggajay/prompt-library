@@ -2,13 +2,26 @@ import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  '';
+
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  '';
+
+const supabaseAnonKey =
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  '';
+
 const openaiApiKey = process.env.OPENAI_API_KEY || '';
 
-const openai = openaiApiKey
-  ? new OpenAI({ apiKey: openaiApiKey })
-  : null;
+const openai = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
 
 interface GeneratePRDRequest {
   projectName: string;
@@ -30,8 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return res.status(500).json({ error: 'Supabase environment variables are missing' });
+  if (!supabaseUrl || (!supabaseServiceKey && !supabaseAnonKey)) {
+    console.error('PRD generator missing Supabase configuration');
+    return res.status(500).json({ error: 'Supabase configuration is missing' });
   }
 
   if (!openai) {
@@ -49,18 +63,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-      auth: {
-        persistSession: false,
-      },
-    });
+    const { client: supabase, isServiceRole } = createSupabaseClient(token);
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase client not configured' });
+    }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = isServiceRole
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser();
+
+    const user = userData?.user;
+
     if (authError || !user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -215,4 +228,29 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
       details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
+}
+
+function createSupabaseClient(token: string) {
+  const isServiceRole = Boolean(supabaseServiceKey);
+
+  if (isServiceRole) {
+    return {
+      client: createClient(supabaseUrl, supabaseServiceKey),
+      isServiceRole: true,
+    } as const;
+  }
+
+  return {
+    client: createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: {
+        persistSession: false,
+      },
+    }),
+    isServiceRole: false,
+  } as const;
 }

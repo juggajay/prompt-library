@@ -3,25 +3,33 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import PDFDocument from 'pdfkit';
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  '';
+
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  '';
+
+const supabaseAnonKey =
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  '';
 
 type PRDContent = Record<string, unknown>;
-
-function getClient(token: string) {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false },
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return res.status(500).json({ error: 'Supabase environment variables are missing' });
+  if (!supabaseUrl || (!supabaseServiceKey && !supabaseAnonKey)) {
+    console.error('PRD export missing Supabase configuration');
+    return res.status(500).json({ error: 'Supabase configuration is missing' });
   }
 
   const authHeader = req.headers.authorization;
@@ -34,7 +42,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const supabase = getClient(token);
+  const { client: supabase, isServiceRole } = createSupabaseClient(token);
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not configured' });
+  }
+
+  const { data: userData, error: authError } = isServiceRole
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
+
+  const user = userData?.user;
+
+  if (authError || !user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   try {
     const { documentId, format } = req.body || {};
@@ -51,6 +72,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error || !document) {
       return res.status(404).json({ error: 'Document not found' });
+    }
+
+    if (document.user_id !== user.id) {
+      return res.status(403).json({ error: 'You do not have access to this document' });
     }
 
     const content = (document.content || {}) as PRDContent;
@@ -82,6 +107,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('PRD export error:', error);
     return res.status(500).json({ error: 'Failed to export document' });
   }
+}
+
+function createSupabaseClient(token: string) {
+  const isServiceRole = Boolean(supabaseServiceKey);
+
+  if (isServiceRole) {
+    return {
+      client: createClient(supabaseUrl, supabaseServiceKey),
+      isServiceRole: true,
+    } as const;
+  }
+
+  return {
+    client: createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: { persistSession: false },
+    }),
+    isServiceRole: false,
+  } as const;
 }
 
 function renderMarkdown(document: any, content: PRDContent): string {
