@@ -15,6 +15,9 @@ export interface ImprovementResult {
     tokens: number;
     cost: string;
     latency_ms: number;
+    agent_name?: string;
+    agent_description?: string;
+    provider?: 'anthropic' | 'openai';
   };
 }
 
