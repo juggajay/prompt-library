@@ -83,19 +83,23 @@ export default async function handler(req, res) {
 
     const systemPrompt = `You are an expert product manager creating comprehensive product requirements documents for beginners.
 Return a friendly yet thorough JSON object with clearly labeled sections that a new product builder can understand.
-Required top-level keys:
-- executiveSummary (string)
-- projectOverview (string)
-- goalsAndObjectives (array of short goal strings)
-- userStories (array of objects with fields: as, want, so, acceptanceCriteria[])
-- functionalRequirements (array of strings)
-- nonFunctionalRequirements (array of strings)
-- technicalArchitecture (object with stack[], architecture, integrations[], deployment)
-- successMetrics (array of objects with name, target, measurement)
-- timeline (object with totalDuration and phases[] containing name, duration, deliverables[])
-- risksAndMitigation (array of objects with risk, impact, mitigation)
 
-Keep the tone supportive and avoid jargon when possible.`;
+IMPORTANT: All content should be in natural language paragraphs and readable sentences, not just bullet points or technical lists.
+
+Required top-level keys:
+- executiveSummary (string - 2-3 paragraph summary in natural language)
+- projectOverview (string - detailed paragraph describing the project)
+- goalsAndObjectives (string - paragraph explaining the main goals and objectives)
+- targetUsers (string - paragraph describing who will use this and their needs)
+- userStories (string - narrative paragraph describing key user scenarios and workflows)
+- functionalRequirements (string - detailed paragraph explaining what the system must do)
+- nonFunctionalRequirements (string - paragraph covering performance, security, scalability needs)
+- technicalArchitecture (string - comprehensive paragraph describing the tech stack, architecture approach, integrations, and deployment strategy)
+- successMetrics (string - paragraph explaining how success will be measured)
+- timeline (string - paragraph outlining the project phases and timeline)
+- risksAndMitigation (string - paragraph discussing potential risks and how to address them)
+
+Keep the tone supportive, use natural language, and write in complete sentences and paragraphs.`;
 
     const requirementList = [
       ...cleanedRequirements.functional.map((item) => `- Functional: ${item}`),
@@ -133,22 +137,19 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
       generatedContent = {
         executiveSummary: 'Summary coming soon.',
         projectOverview: payload.description,
-        goalsAndObjectives: [],
-        userStories: [],
-        functionalRequirements: cleanedRequirements.functional,
-        nonFunctionalRequirements: cleanedRequirements.nonFunctional,
-        technicalArchitecture: {
-          stack: [],
-          architecture: 'To be defined',
-          integrations: [],
-          deployment: 'To be defined',
-        },
-        successMetrics: [],
-        timeline: {
-          totalDuration: payload.timeline || 'TBD',
-          phases: [],
-        },
-        risksAndMitigation: [],
+        goalsAndObjectives: 'Goals and objectives will be defined based on project requirements.',
+        targetUsers: payload.targetAudience,
+        userStories: 'User stories will be developed as the project requirements are refined.',
+        functionalRequirements: cleanedRequirements.functional.length > 0
+          ? 'The system must: ' + cleanedRequirements.functional.join('. ') + '.'
+          : 'Functional requirements will be defined based on project scope.',
+        nonFunctionalRequirements: cleanedRequirements.nonFunctional.length > 0
+          ? 'The system should meet these non-functional requirements: ' + cleanedRequirements.nonFunctional.join('. ') + '.'
+          : 'Non-functional requirements will be defined based on quality and performance needs.',
+        technicalArchitecture: 'Technical architecture details will be determined during the design phase.',
+        successMetrics: 'Success metrics will be defined to measure project outcomes and user satisfaction.',
+        timeline: payload.timeline || 'Timeline will be determined based on project scope and resource availability.',
+        risksAndMitigation: 'Risks and mitigation strategies will be identified and managed throughout the project lifecycle.',
       };
     }
 
