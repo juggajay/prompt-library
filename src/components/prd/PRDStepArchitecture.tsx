@@ -27,22 +27,18 @@ export function PRDStepArchitecture({
   const goals = formData.goals || [];
   const constraints = formData.constraints || [];
 
-  const canGenerate =
-    Boolean(formData.projectName?.trim()) &&
-    Boolean(formData.projectType?.trim()) &&
-    Boolean(formData.description?.trim()) &&
-    Boolean(formData.targetAudience?.trim());
-
   const handleGenerate = () => {
-    if (!canGenerate || !formData.projectName || !formData.projectType || !formData.description || !formData.targetAudience) {
-      return;
-    }
+    // Use defaults for missing fields
+    const projectName = formData.projectName?.trim() || 'Untitled Project';
+    const projectType = formData.projectType?.trim() || 'web_app';
+    const description = formData.description?.trim() || 'A new project';
+    const targetAudience = formData.targetAudience?.trim() || 'General users';
 
     onGenerate({
-      projectName: formData.projectName,
-      projectType: formData.projectType,
-      description: formData.description,
-      targetAudience: formData.targetAudience,
+      projectName,
+      projectType,
+      description,
+      targetAudience,
       goals,
       constraints,
     });
@@ -143,7 +139,7 @@ export function PRDStepArchitecture({
 
           <Button
             onClick={handleGenerate}
-            disabled={!canGenerate || isGenerating}
+            disabled={isGenerating}
             className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white hover:from-purple-500 hover:to-fuchsia-500 h-12"
           >
             {isGenerating ? 'Drafting architecture...' : 'Generate Architecture Blueprint'}
