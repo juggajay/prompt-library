@@ -5,10 +5,7 @@ const PROMPT_ENGINEER_AGENT = {
   name: 'prompt-engineer',
   description:
     'Expert prompt engineer specializing in advanced prompting techniques, LLM optimization, and AI system design. Masters chain-of-thought, constitutional AI, and production prompt strategies. Use when building AI features, improving agent performance, or crafting system prompts.',
-  model: 'opus',
-  provider: 'anthropic',
-  anthropicModelId: 'claude-3-5-opus-latest',
-  fallbackModelId: 'gpt-4o-mini'
+  model: 'gpt-4o-mini'
 } as const;
 
 const PROMPT_ENGINEER_SYSTEM_PROMPT = `
@@ -21,7 +18,7 @@ Capabilities
 - Advanced prompting techniques including chain-of-thought, least-to-most, tree-of-thought, self-consistency, and program-aided reasoning.
 - Constitutional AI alignment, critique-and-revise patterns, jailbreak detection, safety prompting, and ethical guardrails.
 - Meta-prompting, self-improvement workflows, auto-prompting, compression, benchmarking, and iteration frameworks.
-- Model-specific optimization for OpenAI, Anthropic, and open-source models including function calling, JSON mode, temperature tuning, context management, multimodal prompting, and token efficiency.
+- Model-specific optimization for OpenAI and open-source models including function calling, JSON mode, temperature tuning, context management, multimodal prompting, and token efficiency.
 - Production prompt systems with template management, conditional logic, localization, version control, rollback strategies, RAG optimization, hallucination reduction, and knowledge integration.
 - Agent and multi-agent orchestration including persona design, collaboration patterns, task decomposition, tool selection, memory, and evaluation.
 - Specialized applications across business, creative, technical, code, and evaluation domains with focus on reliability, safety, and measurable outcomes.
@@ -130,195 +127,104 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
     const openaiApiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
 
-    if (!anthropicApiKey && !openaiApiKey) {
+    if (!openaiApiKey) {
       return res.status(500).json({
-        error: 'No AI provider configured'
+        error: 'OpenAI API key not configured'
       });
     }
-
-    const providerPreference: 'anthropic' | 'openai' = anthropicApiKey ? 'anthropic' : 'openai';
-    let providerUsed: 'anthropic' | 'openai' = providerPreference;
 
     const normalizedPrompt = prompt.trim().toLowerCase();
     const promptHash = crypto.createHash('md5').update(normalizedPrompt).digest('hex');
     void promptHash; // reserved for future caching
 
     const startTime = Date.now();
-    console.log(
-      `Calling ${providerPreference === 'anthropic' ? 'Anthropic Claude Opus' : 'OpenAI GPT-4o-mini'} for prompt improvement...`
-    );
+    console.log('Calling OpenAI GPT-4o-mini for prompt improvement...');
 
-    let rawResult: any = null;
-    let modelUsed =
-      providerPreference === 'anthropic'
-        ? PROMPT_ENGINEER_AGENT.anthropicModelId
-        : PROMPT_ENGINEER_AGENT.fallbackModelId;
-    let totalTokens = 0;
-    let totalCost = 0;
-
-    if (providerPreference === 'anthropic') {
-      try {
-        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-api-key': anthropicApiKey as string,
-            'anthropic-version': '2023-06-01'
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: PROMPT_ENGINEER_AGENT.model,
+        messages: [
+          {
+            role: 'system',
+            content: PROMPT_ENGINEER_SYSTEM_PROMPT
           },
-          body: JSON.stringify({
-            model: PROMPT_ENGINEER_AGENT.anthropicModelId,
-            system: PROMPT_ENGINEER_SYSTEM_PROMPT,
-            temperature: 0.3,
-            max_tokens: 2000,
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: `Improve the following prompt while preserving the original intent. Return ONLY the JSON object described in the system message.\n\nOriginal prompt:\n${prompt}`
-                  }
-                ]
-              }
-            ]
-          })
-        });
-
-        if (!anthropicResponse.ok) {
-          const errorData = await anthropicResponse.json().catch(() => ({}));
-          throw new Error(errorData?.error?.message || errorData?.message || 'Anthropic API request failed');
-        }
-
-        const anthropicData = await anthropicResponse.json();
-        modelUsed = anthropicData.model || PROMPT_ENGINEER_AGENT.anthropicModelId;
-
-        const contentText = Array.isArray(anthropicData.content)
-          ? anthropicData.content
-              .filter((part: any) => part?.type === 'text' && typeof part.text === 'string')
-              .map((part: any) => part.text)
-              .join('\n')
-              .trim()
-          : '';
-
-        if (!contentText) {
-          throw new Error('Anthropic response did not include text content');
-        }
-
-        try {
-          rawResult = JSON.parse(contentText);
-        } catch (parseError) {
-          console.error('Failed to parse Anthropic response:', contentText);
-          throw new Error('Failed to parse Anthropic response as JSON');
-        }
-
-        const inputTokens = anthropicData?.usage?.input_tokens ?? 0;
-        const outputTokens = anthropicData?.usage?.output_tokens ?? 0;
-        totalTokens = inputTokens + outputTokens;
-
-        const inputCost = (inputTokens / 1_000_000) * 15;
-        const outputCost = (outputTokens / 1_000_000) * 75;
-        totalCost = inputCost + outputCost;
-      } catch (anthropicError) {
-        console.error('Anthropic improvement failed:', anthropicError);
-        if (!openaiApiKey) {
-          throw anthropicError;
-        }
-        providerUsed = 'openai';
-      }
-    }
-
-    if (providerUsed === 'openai' && rawResult === null) {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: PROMPT_ENGINEER_AGENT.fallbackModelId,
-          messages: [
-            {
-              role: 'system',
-              content: PROMPT_ENGINEER_SYSTEM_PROMPT
-            },
-            {
-              role: 'user',
-              content: `Improve this prompt while preserving the original intent. Return ONLY the JSON object described in the system prompt.\n\nOriginal prompt:\n${prompt}`
-            }
-          ],
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: 'prompt_improvement',
-              strict: true,
-              schema: {
-                type: 'object',
-                properties: {
-                  improved_prompt: { type: 'string' },
-                  changes_made: {
-                    type: 'array',
-                    items: { type: 'string' }
-                  },
-                  reasoning: { type: 'string' },
-                  clarity_score: { type: 'number' },
-                  specificity_score: { type: 'number' },
-                  structure_score: { type: 'number' },
-                  overall_score: { type: 'number' }
+          {
+            role: 'user',
+            content: `Improve this prompt while preserving the original intent. Return ONLY the JSON object described in the system prompt.\n\nOriginal prompt:\n${prompt}`
+          }
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'prompt_improvement',
+            strict: true,
+            schema: {
+              type: 'object',
+              properties: {
+                improved_prompt: { type: 'string' },
+                changes_made: {
+                  type: 'array',
+                  items: { type: 'string' }
                 },
-                required: [
-                  'improved_prompt',
-                  'changes_made',
-                  'reasoning',
-                  'clarity_score',
-                  'specificity_score',
-                  'structure_score',
-                  'overall_score'
-                ],
-                additionalProperties: false
-              }
+                reasoning: { type: 'string' },
+                clarity_score: { type: 'number' },
+                specificity_score: { type: 'number' },
+                structure_score: { type: 'number' },
+                overall_score: { type: 'number' }
+              },
+              required: [
+                'improved_prompt',
+                'changes_made',
+                'reasoning',
+                'clarity_score',
+                'specificity_score',
+                'structure_score',
+                'overall_score'
+              ],
+              additionalProperties: false
             }
-          },
-          temperature: 0.3,
-          max_tokens: 2000
-        })
-      });
+          }
+        },
+        temperature: 0.3,
+        max_tokens: 2000
+      })
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData?.error?.message || 'OpenAI API request failed');
-      }
-
-      const data = await response.json();
-      modelUsed = data.model || PROMPT_ENGINEER_AGENT.fallbackModelId;
-
-      const messageContent = data?.choices?.[0]?.message?.content;
-      if (!messageContent) {
-        throw new Error('OpenAI response missing content');
-      }
-
-      try {
-        rawResult = JSON.parse(messageContent);
-      } catch (parseError) {
-        console.error('Failed to parse OpenAI response:', messageContent);
-        throw new Error('Failed to parse OpenAI response as JSON');
-      }
-
-      const usage = data.usage || {};
-      const promptTokens = usage.prompt_tokens ?? 0;
-      const completionTokens = usage.completion_tokens ?? 0;
-      totalTokens = usage.total_tokens ?? promptTokens + completionTokens;
-
-      const inputCost = (promptTokens / 1_000_000) * 0.15;
-      const outputCost = (completionTokens / 1_000_000) * 0.6;
-      totalCost = inputCost + outputCost;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData?.error?.message || 'OpenAI API request failed');
     }
 
-    if (!rawResult) {
-      throw new Error('AI provider returned an empty result');
+    const data = await response.json();
+    const messageContent = data?.choices?.[0]?.message?.content;
+
+    if (!messageContent) {
+      throw new Error('OpenAI response missing content');
     }
+
+    let rawResult: any;
+    try {
+      rawResult = JSON.parse(messageContent);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', messageContent);
+      throw new Error('Failed to parse OpenAI response as JSON');
+    }
+
+    const usage = data.usage || {};
+    const promptTokens = usage.prompt_tokens ?? 0;
+    const completionTokens = usage.completion_tokens ?? 0;
+    const totalTokens = usage.total_tokens ?? promptTokens + completionTokens;
+
+    const inputCost = (promptTokens / 1_000_000) * 0.15; // $0.15 per 1M tokens
+    const outputCost = (completionTokens / 1_000_000) * 0.6; // $0.60 per 1M tokens
+    const totalCost = inputCost + outputCost;
 
     const latency = Date.now() - startTime;
     const result = normalizeImprovementResult(rawResult, prompt);
@@ -327,13 +233,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...result,
       cached: false,
       metadata: {
-        model: modelUsed,
+        model: data.model || PROMPT_ENGINEER_AGENT.model,
         tokens: totalTokens,
         cost: totalCost.toFixed(6),
         latency_ms: latency,
         agent_name: PROMPT_ENGINEER_AGENT.name,
         agent_description: PROMPT_ENGINEER_AGENT.description,
-        provider: providerUsed
+        provider: 'openai'
       }
     });
   } catch (error: any) {
@@ -349,13 +255,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (message.includes('401') || message.includes('API key')) {
       return res.status(500).json({
-        error: 'AI provider API key is invalid or missing'
-      });
-    }
-
-    if (message.includes('No AI provider configured')) {
-      return res.status(500).json({
-        error: 'No AI provider configured'
+        error: 'OpenAI API key is invalid or missing'
       });
     }
 
