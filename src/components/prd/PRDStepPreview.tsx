@@ -1,4 +1,5 @@
-import { Download, FileText, Loader2, Trash } from 'lucide-react';
+import { Download, FileText, Loader2, Trash, Edit3, Save, X } from 'lucide-react';
+import { useState } from 'react';
 import type { PRDDocument } from '../../types';
 import { Button } from '../ui/Button';
 
@@ -10,6 +11,8 @@ interface PRDStepPreviewProps {
   onExport: (documentId: string, format: 'markdown' | 'pdf' | 'docx') => Promise<void>;
   isExporting: boolean;
   onDeleteDocument: (documentId: string) => Promise<void>;
+  onSaveDocument?: (documentId: string, content: Record<string, unknown>) => Promise<void>;
+  isSaving?: boolean;
 }
 
 const EXPORT_FORMATS: Array<{ label: string; value: 'markdown' | 'pdf' | 'docx' }> = [
@@ -26,8 +29,40 @@ export function PRDStepPreview({
   onExport,
   isExporting,
   onDeleteDocument,
+  onSaveDocument,
+  isSaving = false,
 }: PRDStepPreviewProps) {
   const activeDocument = selectedDocument || generatedDocument || null;
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedContent, setEditedContent] = useState<Record<string, unknown>>({});
+
+  const handleEditToggle = () => {
+    if (!activeDocument) return;
+
+    if (!isEditMode) {
+      setEditedContent(activeDocument.content || {});
+    }
+    setIsEditMode(!isEditMode);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditedContent({});
+  };
+
+  const handleSave = async () => {
+    if (!activeDocument || !onSaveDocument) return;
+
+    await onSaveDocument(activeDocument.id, editedContent);
+    setIsEditMode(false);
+  };
+
+  const handleContentChange = (key: string, value: string) => {
+    setEditedContent((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
   return (
     <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -45,21 +80,55 @@ export function PRDStepPreview({
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
-                {EXPORT_FORMATS.map((format) => (
-                  <Button
-                    key={format.value}
-                    onClick={() => onExport(activeDocument.id, format.value)}
-                    disabled={isExporting}
-                    className="flex items-center gap-2 bg-white/10 text-white hover:bg-white/20"
-                  >
-                    {isExporting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4" />
-                    )}
-                    {format.label}
-                  </Button>
-                ))}
+                {isEditMode ? (
+                  <>
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-500"
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      Save
+                    </Button>
+                    <Button
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 bg-white/10 text-white hover:bg-white/20"
+                    >
+                      <X className="h-4 w-4" />
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handleEditToggle}
+                      className="flex items-center gap-2 bg-white/10 text-white hover:bg-white/20"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      Edit
+                    </Button>
+                    {EXPORT_FORMATS.map((format) => (
+                      <Button
+                        key={format.value}
+                        onClick={() => onExport(activeDocument.id, format.value)}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 bg-white/10 text-white hover:bg-white/20"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        {format.label}
+                      </Button>
+                    ))}
+                  </>
+                )}
               </div>
             </header>
 
@@ -84,15 +153,30 @@ export function PRDStepPreview({
             </section>
 
             <div className="space-y-5">
-              {Object.entries(activeDocument.content || {}).map(([sectionTitle, sectionValue]) => (
-                <article
-                  key={sectionTitle}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-5"
-                >
-                  <h4 className="text-lg font-semibold text-white mb-3">{formatHeading(sectionTitle)}</h4>
-                  <SectionBody value={sectionValue} />
-                </article>
-              ))}
+              {Object.entries(activeDocument.content || {}).map(([sectionTitle, sectionValue]) => {
+                const displayValue = isEditMode
+                  ? editedContent[sectionTitle]
+                  : sectionValue;
+
+                return (
+                  <article
+                    key={sectionTitle}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-5"
+                  >
+                    <h4 className="text-lg font-semibold text-white mb-3">{formatHeading(sectionTitle)}</h4>
+                    {isEditMode ? (
+                      <textarea
+                        value={typeof displayValue === 'string' ? displayValue : JSON.stringify(displayValue, null, 2)}
+                        onChange={(e) => handleContentChange(sectionTitle, e.target.value)}
+                        className="w-full min-h-[120px] rounded-xl bg-slate-900/60 px-4 py-3 text-sm text-gray-200 border border-white/10 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-y"
+                        placeholder="Enter content..."
+                      />
+                    ) : (
+                      <SectionBody value={displayValue} />
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </div>
         ) : (

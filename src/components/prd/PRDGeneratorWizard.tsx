@@ -12,6 +12,7 @@ import {
   useGeneratePRD,
   usePRDDocuments,
   usePRDTemplates,
+  useUpdatePRD,
 } from '../../hooks/usePRDGenerator';
 import { toast } from 'sonner';
 
@@ -43,6 +44,7 @@ export function PRDGeneratorWizard() {
   const generateMutation = useGeneratePRD();
   const exportMutation = useExportPRD();
   const deleteMutation = useDeletePRD();
+  const updateMutation = useUpdatePRD();
 
   const templates = templatesQuery.data?.templates ?? [];
   const documents = documentsQuery.data ?? [];
@@ -170,6 +172,14 @@ export function PRDGeneratorWizard() {
     }
   };
 
+  const handleSave = async (documentId: string, content: Record<string, unknown>) => {
+    try {
+      await updateMutation.mutateAsync({ id: documentId, updates: { content } });
+    } catch {
+      // toast handled
+    }
+  };
+
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   const goNext = () => {
@@ -258,6 +268,8 @@ export function PRDGeneratorWizard() {
             onExport={handleExport}
             isExporting={exportMutation.isPending}
             onDeleteDocument={handleDelete}
+            onSaveDocument={handleSave}
+            isSaving={updateMutation.isPending}
           />
         )}
       </div>
