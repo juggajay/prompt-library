@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { GeneratePRDParams, PRDDocument, PRDTemplate } from '../../types';
+import type {
+  BlueprintResponse,
+  CLITaskResponse,
+  CreateBlueprintPayload,
+  GenerateTasksPayload,
+  GeneratePRDParams,
+  PRDDocument,
+  PRDTemplate,
+} from '../../types';
 import { Button } from '../ui/Button';
 import { PRDStepOverview } from './PRDStepOverview';
+import { PRDStepArchitecture } from './PRDStepArchitecture';
+import { PRDStepTasks } from './PRDStepTasks';
 import { PRDStepRequirements } from './PRDStepRequirements';
 import { PRDStepAIEnhancement } from './PRDStepAIEnhancement';
 import { PRDStepOptimize } from './PRDStepOptimize';
@@ -16,19 +26,29 @@ import {
   usePRDTemplates,
   useUpdatePRD,
 } from '../../hooks/usePRDGenerator';
+import { useGenerateBlueprint, useGenerateTasks, useSaveCLITasks } from '../../hooks/useBlueprint';
 import { toast } from 'sonner';
 
-const INITIAL_FORM: Partial<GeneratePRDParams> = {
+type WizardFormData = Partial<GeneratePRDParams> & {
+  goals?: string[];
+  constraints?: string[];
+};
+
+const INITIAL_FORM: WizardFormData = {
   projectType: 'web_app',
   requirements: {
     functional: [],
     nonFunctional: [],
     technical: [],
   },
+  goals: [],
+  constraints: [],
 };
 
 const STEPS = [
   { id: 'overview', title: 'Project Basics', description: 'Name, type, and audience' },
+  { id: 'architecture', title: 'Architecture Blueprint', description: 'High-level system plan' },
+  { id: 'cli-tasks', title: 'CLI Task Plan', description: 'Copy-ready prompts for copilots' },
   { id: 'requirements', title: 'Requirements', description: 'Functional and technical notes' },
   { id: 'ai', title: 'AI Generation', description: 'Generate your PRD with AI' },
   { id: 'optimize', title: 'Review & Improve', description: 'Chat with Nova to refine your PRD' },
@@ -37,8 +57,10 @@ const STEPS = [
 
 export function PRDGeneratorWizard() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<GeneratePRDParams>>(INITIAL_FORM);
+  const [formData, setFormData] = useState<WizardFormData>(INITIAL_FORM);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [blueprint, setBlueprint] = useState<BlueprintResponse | null>(null);
+  const [cliTasks, setCliTasks] = useState<CLITaskResponse | null>(null);
   const [generatedDocument, setGeneratedDocument] = useState<PRDDocument | null>(null);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
@@ -49,6 +71,9 @@ export function PRDGeneratorWizard() {
   const exportMutation = useExportPRD();
   const deleteMutation = useDeletePRD();
   const updateMutation = useUpdatePRD();
+  const blueprintMutation = useGenerateBlueprint();
+  const tasksMutation = useGenerateTasks();
+  const saveTasksMutation = useSaveCLITasks();
 
   const templates = templatesQuery.data?.templates ?? [];
   const documents = documentsQuery.data ?? [];
@@ -70,7 +95,7 @@ export function PRDGeneratorWizard() {
   const selectedDocument =
     mergedDocuments.find((doc) => doc.id === selectedDocumentId) || generatedDocument || null;
 
-  const updateFormData = (updates: Partial<GeneratePRDParams>) => {
+  const updateFormData = (updates: Partial<GeneratePRDParams> & { goals?: string[]; constraints?: string[] }) => {
     setFormData((prev) => {
       const next = {
         ...prev,
@@ -79,6 +104,14 @@ export function PRDGeneratorWizard() {
 
       if (!next.requirements) {
         next.requirements = { functional: [], nonFunctional: [], technical: [] };
+      }
+
+      if (!next.goals) {
+        next.goals = [];
+      }
+
+      if (!next.constraints) {
+        next.constraints = [];
       }
 
       return next;
@@ -91,6 +124,29 @@ export function PRDGeneratorWizard() {
       projectType: template.project_type,
       templateId: template.id.startsWith('default-') ? undefined : template.id,
     });
+  };
+
+  const handleGenerateBlueprint = async (payload: CreateBlueprintPayload) => {
+    try {
+      const result = await blueprintMutation.mutateAsync(payload);
+      setBlueprint(result);
+      setCliTasks(null);
+    } catch {
+      // handled inside mutation
+    }
+  };
+
+  const handleGenerateTasksPlan = async (payload: GenerateTasksPayload) => {
+    try {
+      const result = await tasksMutation.mutateAsync(payload);
+      setCliTasks(result);
+      const blueprintId = blueprint?.blueprintId;
+      if (blueprintId && result.tasks?.length) {
+        saveTasksMutation.mutate({ blueprintId, tasks: result.tasks });
+      }
+    } catch {
+      // handled inside mutation
+    }
   };
 
   const handleGenerate = async () => {
@@ -109,6 +165,12 @@ export function PRDGeneratorWizard() {
     if (missing.length > 0) {
       toast.error('Let’s fill in the basics before generating.');
       setCurrentStep(0);
+      return;
+    }
+
+    if (!blueprint) {
+      toast.error('Generate your architecture blueprint before creating the PRD.');
+      setCurrentStep(1);
       return;
     }
 
@@ -133,9 +195,9 @@ export function PRDGeneratorWizard() {
       const result = await generateMutation.mutateAsync(payload);
       setGeneratedDocument(result.document);
       setSelectedDocumentId(result.document.id);
-      setCurrentStep(3); // Move to optimize step
+      setCurrentStep(5);
     } catch {
-      // Error handled by mutation toast
+      // handled inside mutation
     }
   };
 
@@ -201,7 +263,7 @@ export function PRDGeneratorWizard() {
         setSelectedDocumentId(null);
       }
     } catch {
-      // toast handled
+      // handled in mutation
     }
   };
 
@@ -209,7 +271,7 @@ export function PRDGeneratorWizard() {
     try {
       await updateMutation.mutateAsync({ id: documentId, updates: { content } });
     } catch {
-      // toast handled
+      // handled in mutation
     }
   };
 
@@ -263,8 +325,8 @@ export function PRDGeneratorWizard() {
               );
             })}
           </div>
-        </div>
       </div>
+    </div>
 
       <div className="px-6 py-8">
         {currentStep === 0 && (
@@ -277,10 +339,32 @@ export function PRDGeneratorWizard() {
             selectedTemplateId={selectedTemplateId}
           />
         )}
+
         {currentStep === 1 && (
+          <PRDStepArchitecture
+            formData={formData}
+            updateFormData={updateFormData}
+            onGenerate={handleGenerateBlueprint}
+            blueprint={blueprint}
+            isGenerating={blueprintMutation.isPending}
+          />
+        )}
+
+        {currentStep === 2 && (
+          <PRDStepTasks
+            formData={formData}
+            blueprintSummary={blueprint?.architecture.summary || null}
+            onGenerate={handleGenerateTasksPlan}
+            tasks={cliTasks}
+            isGenerating={tasksMutation.isPending}
+          />
+        )}
+
+        {currentStep === 3 && (
           <PRDStepRequirements formData={formData} updateFormData={updateFormData} />
         )}
-        {currentStep === 2 && (
+
+        {currentStep === 4 && (
           <PRDStepAIEnhancement
             formData={formData}
             onGenerate={handleGenerate}
@@ -292,14 +376,16 @@ export function PRDGeneratorWizard() {
             }
           />
         )}
-        {currentStep === 3 && (
+
+        {currentStep === 5 && (
           <PRDStepOptimize
             generatedDocument={generatedDocument}
             onOptimize={handleOptimize}
             isOptimizing={optimizeMutation.isPending}
           />
         )}
-        {currentStep === 4 && (
+
+        {currentStep === 6 && (
           <PRDStepPreview
             selectedDocument={selectedDocument}
             generatedDocument={generatedDocument}

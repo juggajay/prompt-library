@@ -56,6 +56,16 @@ app.post('/api/export-prd', async (req, res) => {
   return handler(req, res);
 });
 
+app.post('/api/generate-blueprint', async (req, res) => {
+  const handler = await loadHandler('generate-blueprint.ts');
+  return handler(req, res);
+});
+
+app.post('/api/generate-cli-tasks', async (req, res) => {
+  const handler = await loadHandler('generate-cli-tasks.ts');
+  return handler(req, res);
+});
+
 // Create Vite server in middleware mode
 const vite = await createViteServer({
   server: { middlewareMode: true },

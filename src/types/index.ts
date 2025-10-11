@@ -106,3 +106,4 @@ export interface User {
 }
 
 export * from './prd';
+export * from './blueprint';
