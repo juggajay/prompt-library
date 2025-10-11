@@ -5,11 +5,13 @@ import { Button } from '../ui/Button';
 import { PRDStepOverview } from './PRDStepOverview';
 import { PRDStepRequirements } from './PRDStepRequirements';
 import { PRDStepAIEnhancement } from './PRDStepAIEnhancement';
+import { PRDStepOptimize } from './PRDStepOptimize';
 import { PRDStepPreview } from './PRDStepPreview';
 import {
   useDeletePRD,
   useExportPRD,
   useGeneratePRD,
+  useOptimizePRD,
   usePRDDocuments,
   usePRDTemplates,
   useUpdatePRD,
@@ -28,7 +30,8 @@ const INITIAL_FORM: Partial<GeneratePRDParams> = {
 const STEPS = [
   { id: 'overview', title: 'Project Basics', description: 'Name, type, and audience' },
   { id: 'requirements', title: 'Requirements', description: 'Functional and technical notes' },
-  { id: 'ai', title: 'AI Enhancements', description: 'Let the assistant polish your plan' },
+  { id: 'ai', title: 'AI Generation', description: 'Generate your PRD with AI' },
+  { id: 'optimize', title: 'Review & Improve', description: 'Chat with Nova to refine your PRD' },
   { id: 'preview', title: 'Preview & Export', description: 'Review, download, and share' },
 ] as const;
 
@@ -42,6 +45,7 @@ export function PRDGeneratorWizard() {
   const templatesQuery = usePRDTemplates();
   const documentsQuery = usePRDDocuments();
   const generateMutation = useGeneratePRD();
+  const optimizeMutation = useOptimizePRD();
   const exportMutation = useExportPRD();
   const deleteMutation = useDeletePRD();
   const updateMutation = useUpdatePRD();
@@ -129,10 +133,39 @@ export function PRDGeneratorWizard() {
       const result = await generateMutation.mutateAsync(payload);
       setGeneratedDocument(result.document);
       setSelectedDocumentId(result.document.id);
-      setCurrentStep(3);
+      setCurrentStep(3); // Move to optimize step
     } catch {
       // Error handled by mutation toast
     }
+  };
+
+  const handleOptimize = async (
+    message: string,
+    history: Array<{ role: string; content: string; result?: any }>
+  ) => {
+    if (!generatedDocument) {
+      throw new Error('No document to optimize');
+    }
+
+    const conversationHistory = history.map((msg) => ({
+      role: msg.role,
+      content: msg.role === 'assistant' && msg.result ? msg.result.summary : msg.content,
+    }));
+
+    const sessionContext = {
+      goal: formData.description,
+      targetAudience: formData.targetAudience,
+      stage: 'draft',
+    };
+
+    const result = await optimizeMutation.mutateAsync({
+      prdContent: generatedDocument.content,
+      conversationHistory,
+      userMessage: message,
+      sessionContext,
+    });
+
+    return result.result;
   };
 
   const handleExport = async (documentId: string, format: 'markdown' | 'pdf' | 'docx') => {
@@ -260,6 +293,13 @@ export function PRDGeneratorWizard() {
           />
         )}
         {currentStep === 3 && (
+          <PRDStepOptimize
+            generatedDocument={generatedDocument}
+            onOptimize={handleOptimize}
+            isOptimizing={optimizeMutation.isPending}
+          />
+        )}
+        {currentStep === 4 && (
           <PRDStepPreview
             selectedDocument={selectedDocument}
             generatedDocument={generatedDocument}

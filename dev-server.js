@@ -36,6 +36,26 @@ app.delete('/api/doc-reader/guides/:id', async (req, res) => {
   return handler(req, res);
 });
 
+app.get('/api/prd-templates', async (req, res) => {
+  const handler = await loadHandler('prd-templates.ts');
+  return handler(req, res);
+});
+
+app.post('/api/prd-templates', async (req, res) => {
+  const handler = await loadHandler('prd-templates.ts');
+  return handler(req, res);
+});
+
+app.post('/api/generate-prd', async (req, res) => {
+  const handler = await loadHandler('generate-prd.ts');
+  return handler(req, res);
+});
+
+app.post('/api/export-prd', async (req, res) => {
+  const handler = await loadHandler('export-prd.ts');
+  return handler(req, res);
+});
+
 // Create Vite server in middleware mode
 const vite = await createViteServer({
   server: { middlewareMode: true },

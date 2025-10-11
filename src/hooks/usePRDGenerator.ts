@@ -81,3 +81,21 @@ export function useExportPRD() {
     },
   });
 }
+
+export function useOptimizePRD() {
+  return useMutation({
+    mutationFn: (params: {
+      prdContent?: Record<string, unknown>;
+      conversationHistory?: Array<{ role: string; content: string }>;
+      userMessage: string;
+      sessionContext?: {
+        goal?: string;
+        targetAudience?: string;
+        stage?: string;
+      };
+    }) => prdApi.optimizePRD(params),
+    onError: (error: Error) => {
+      toast.error(error.message || 'Optimization failed');
+    },
+  });
+}

@@ -152,6 +152,46 @@ export async function exportDocument(
   return new Blob([arrayBuffer], { type: mime });
 }
 
+export async function optimizePRD(params: {
+  prdContent?: Record<string, unknown>;
+  conversationHistory?: Array<{ role: string; content: string }>;
+  userMessage: string;
+  sessionContext?: {
+    goal?: string;
+    targetAudience?: string;
+    stage?: string;
+  };
+}): Promise<{
+  success: boolean;
+  result: {
+    summary: string;
+    improvements: Array<{
+      section: string;
+      issue: string;
+      recommendation: string;
+      benefit: string;
+    }>;
+    suggested_rewrite: string | null;
+    metrics: string[];
+    risks: string[];
+    next_actions: string[];
+    follow_up_question: string;
+  };
+  tokensUsed: number;
+}> {
+  const response = await fetchWithAuth('/api/optimize-prd', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const message = await safeJson(response);
+    throw new Error(message?.error || 'Optimization failed');
+  }
+
+  return response.json();
+}
+
 async function safeJson(response: Response): Promise<any | null> {
   try {
     return await response.json();
