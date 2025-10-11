@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
 
 const PROMPT_ENGINEER_AGENT = {
@@ -6,7 +5,7 @@ const PROMPT_ENGINEER_AGENT = {
   description:
     'Expert prompt engineer specializing in advanced prompting techniques, LLM optimization, and AI system design. Masters chain-of-thought, constitutional AI, and production prompt strategies. Use when building AI features, improving agent performance, or crafting system prompts.',
   model: 'gpt-4o'
-} as const;
+};
 
 const PROMPT_ENGINEER_SYSTEM_PROMPT = `
 You are ${PROMPT_ENGINEER_AGENT.name}, ${PROMPT_ENGINEER_AGENT.description}
@@ -90,7 +89,7 @@ Return a strict JSON object:
 }
 `.trim();
 
-function normalizeScore(value: unknown, fallback: number) {
+function normalizeScore(value, fallback) {
   if (typeof value === 'number' && Number.isFinite(value)) {
     if (value < 0) return 0;
     if (value > 1) return 1;
@@ -99,14 +98,14 @@ function normalizeScore(value: unknown, fallback: number) {
   return fallback;
 }
 
-function normalizeImprovementResult(rawResult: any, fallbackPrompt: string) {
+function normalizeImprovementResult(rawResult, fallbackPrompt) {
   const improvedPrompt =
     typeof rawResult?.improved_prompt === 'string' && rawResult.improved_prompt.trim().length > 0
       ? rawResult.improved_prompt
       : fallbackPrompt;
 
   const changes = Array.isArray(rawResult?.changes_made)
-    ? rawResult.changes_made.filter((item: unknown) => typeof item === 'string' && item.trim().length > 0)
+    ? rawResult.changes_made.filter((item) => typeof item === 'string' && item.trim().length > 0)
     : [];
 
   return {
@@ -123,17 +122,7 @@ function normalizeImprovementResult(rawResult: any, fallbackPrompt: string) {
   };
 }
 
-interface OpenAIUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-}
-
-async function requestImprovement(
-  prompt: string,
-  apiKey: string,
-  attempt: number
-): Promise<{ rawResult: any; model: string; usage: OpenAIUsage }> {
+async function requestImprovement(prompt, apiKey, attempt) {
   const retrySuffix =
     attempt > 1
       ? '\n\nImportant: The previous attempt did not provide a meaningfully different prompt. Produce a significantly improved version with new structure, refined language, explicit evaluation criteria, and concrete adjustments. DO NOT repeat large portions of the original text verbatim.'
@@ -206,7 +195,7 @@ async function requestImprovement(
     throw new Error('OpenAI response missing content');
   }
 
-  let rawResult: any;
+  let rawResult;
   try {
     rawResult = JSON.parse(messageContent);
   } catch (parseError) {
@@ -230,13 +219,13 @@ async function requestImprovement(
   };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { prompt } = req.body;
+    const { prompt } = req.body ?? {};
 
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({
@@ -278,7 +267,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let totalPromptTokens = 0;
     let totalCompletionTokens = 0;
     let totalTokens = 0;
-    let finalResult: ReturnType<typeof normalizeImprovementResult> | null = null;
+    let finalResult = null;
 
     while (attempt <= MAX_ATTEMPTS) {
       console.log(`Prompt improvement attempt ${attempt}`);
@@ -331,7 +320,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         attempts: attemptsUsed
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in improve-prompt API:', error);
 
     const message = typeof error?.message === 'string' ? error.message : '';
