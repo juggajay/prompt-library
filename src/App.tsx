@@ -9,6 +9,7 @@ import { Signup } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { DocReader } from './pages/DocReader';
+import { PRDGenerator } from './pages/PRDGenerator';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DocReader />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prd-generator"
+              element={
+                <ProtectedRoute>
+                  <PRDGenerator />
                 </ProtectedRoute>
               }
             />

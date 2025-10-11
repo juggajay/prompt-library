@@ -104,3 +104,5 @@ export interface User {
   full_name: string | null;
   avatar_url: string | null;
 }
+
+export * from './prd';

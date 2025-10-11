@@ -14,6 +14,11 @@ export function DocReader() {
     setSelectedGuideId(guideId);
   };
 
+  const handleGuideDeleted = (guideId: string) => {
+    setSelectedGuideId((current) => (current === guideId ? null : current));
+    setRefreshTrigger((prev) => prev + 1);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -44,14 +49,15 @@ export function DocReader() {
             <GuideList
               refreshTrigger={refreshTrigger}
               selectedGuideId={selectedGuideId}
-              onSelectGuide={setSelectedGuideId}
+              onSelectGuide={(id) => setSelectedGuideId(id)}
+              onGuideDeleted={handleGuideDeleted}
             />
           </div>
 
           {/* Main Content - Guide Viewer */}
           <div className="lg:col-span-2">
             {selectedGuideId ? (
-              <GuideViewer guideId={selectedGuideId} />
+              <GuideViewer guideId={selectedGuideId} onGuideDeleted={handleGuideDeleted} />
             ) : (
               <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center">
                 <svg

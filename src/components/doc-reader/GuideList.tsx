@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
-import { fetchGuides, type Guide } from '../../services/docReaderService';
+import { Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { fetchGuides, deleteGuide, type Guide } from '../../services/docReaderService';
 
 interface GuideListProps {
   refreshTrigger: number;
   selectedGuideId: string | null;
-  onSelectGuide: (id: string) => void;
+  onSelectGuide: (id: string | null) => void;
+  onGuideDeleted?: (id: string) => void;
 }
 
-export function GuideList({ refreshTrigger, selectedGuideId, onSelectGuide }: GuideListProps) {
+export function GuideList({
+  refreshTrigger,
+  selectedGuideId,
+  onSelectGuide,
+  onGuideDeleted,
+}: GuideListProps) {
   const [guides, setGuides] = useState<Guide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGuides();
@@ -46,6 +55,29 @@ export function GuideList({ refreshTrigger, selectedGuideId, onSelectGuide }: Gu
     );
   };
 
+  const handleDeleteGuide = async (guideId: string) => {
+    if (deletingId) return;
+    if (!window.confirm('Delete this guide? Processed content and chat history will be removed.')) {
+      return;
+    }
+
+    setDeletingId(guideId);
+    try {
+      await deleteGuide(guideId);
+      setGuides((prev) => prev.filter((guide) => guide.id !== guideId));
+      if (selectedGuideId === guideId) {
+        onSelectGuide(null);
+      }
+      onGuideDeleted?.(guideId);
+      toast.success('Guide deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete guide:', error);
+      toast.error('Failed to delete guide');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
@@ -78,7 +110,7 @@ export function GuideList({ refreshTrigger, selectedGuideId, onSelectGuide }: Gu
                 selectedGuideId === guide.id ? 'bg-purple-500/10 border-l-2 border-purple-500' : ''
               }`}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-white truncate">
                     {guide.title || 'Untitled'}
@@ -86,6 +118,21 @@ export function GuideList({ refreshTrigger, selectedGuideId, onSelectGuide }: Gu
                   <p className="text-xs text-gray-400 truncate mt-1">{guide.source_url}</p>
                   <div className="mt-2">{getStatusBadge(guide.processing_status)}</div>
                 </div>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleDeleteGuide(guide.id);
+                  }}
+                  className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                  aria-label="Delete guide"
+                >
+                  {deletingId === guide.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </button>
           ))

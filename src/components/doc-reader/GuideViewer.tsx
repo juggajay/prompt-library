@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ChatInterface } from './ChatInterface';
-import { fetchGuide, type Guide } from '../../services/docReaderService';
+import { Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { fetchGuide, deleteGuide, type Guide } from '../../services/docReaderService';
 
 interface GuideViewerProps {
   guideId: string;
+  onGuideDeleted?: (id: string) => void;
 }
 
-export function GuideViewer({ guideId }: GuideViewerProps) {
+export function GuideViewer({ guideId, onGuideDeleted }: GuideViewerProps) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadGuide();
@@ -32,6 +36,26 @@ export function GuideViewer({ guideId }: GuideViewerProps) {
       console.error('Failed to fetch guide:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteGuide = async () => {
+    if (isDeleting) return;
+    if (!window.confirm('Delete this guide? Processed content and chat history will be removed.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteGuide(guideId);
+      toast.success('Guide deleted successfully');
+      onGuideDeleted?.(guideId);
+      setGuide(null);
+    } catch (error) {
+      console.error('Failed to delete guide:', error);
+      toast.error('Failed to delete guide');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -99,7 +123,7 @@ export function GuideViewer({ guideId }: GuideViewerProps) {
     <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
       {/* Header */}
       <div className="border-b border-white/10 p-6">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-white">{guide.title}</h2>
             <a
@@ -111,12 +135,22 @@ export function GuideViewer({ guideId }: GuideViewerProps) {
               {guide.source_url}
             </a>
           </div>
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-lg text-sm font-medium hover:from-purple-500 hover:to-fuchsia-500 shadow-lg shadow-purple-500/50"
-          >
-            {showChat ? 'Hide Chat' : 'Ask Questions'}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-lg text-sm font-medium hover:from-purple-500 hover:to-fuchsia-500 shadow-lg shadow-purple-500/50"
+            >
+              {showChat ? 'Hide Chat' : 'Ask Questions'}
+            </button>
+            <button
+              onClick={handleDeleteGuide}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete Guide
+            </button>
+          </div>
         </div>
       </div>
 
