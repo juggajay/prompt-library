@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const supabaseUrl =
   process.env.SUPABASE_URL ||
@@ -75,7 +74,7 @@ const DEFAULT_TEMPLATES = [
   },
 ];
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (!supabaseUrl || (!supabaseServiceKey && !supabaseAnonKey)) {
     console.error('PRD templates missing Supabase configuration');
     return res.status(500).json({ error: 'Supabase configuration is missing' });
@@ -176,14 +175,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-function createSupabaseClient(token: string) {
+function createSupabaseClient(token) {
   const isServiceRole = Boolean(supabaseServiceKey);
 
   if (isServiceRole) {
     return {
       client: createClient(supabaseUrl, supabaseServiceKey),
       isServiceRole: true,
-    } as const;
+    };
   }
 
   return {
@@ -196,5 +195,5 @@ function createSupabaseClient(token: string) {
       auth: { persistSession: false },
     }),
     isServiceRole: false,
-  } as const;
+  };
 }

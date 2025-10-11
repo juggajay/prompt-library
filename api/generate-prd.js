@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const supabaseUrl =
   process.env.SUPABASE_URL ||
@@ -23,22 +22,7 @@ const openaiApiKey = process.env.OPENAI_API_KEY || '';
 
 const openai = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
 
-interface GeneratePRDRequest {
-  projectName: string;
-  projectType: string;
-  description: string;
-  targetAudience: string;
-  requirements: {
-    functional: string[];
-    nonFunctional: string[];
-    technical: string[];
-  };
-  timeline?: string;
-  promptId?: string;
-  templateId?: string;
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -78,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const payload = (req.body || {}) as Partial<GeneratePRDRequest>;
+    const payload = req.body || {};
     if (!payload.projectName || !payload.projectType || !payload.description || !payload.targetAudience) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -141,7 +125,7 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
     });
 
     const contentText = completion.choices[0]?.message?.content || '{}';
-    let generatedContent: Record<string, unknown>;
+    let generatedContent;
     try {
       generatedContent = JSON.parse(contentText);
     } catch (parseError) {
@@ -230,14 +214,14 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
   }
 }
 
-function createSupabaseClient(token: string) {
+function createSupabaseClient(token) {
   const isServiceRole = Boolean(supabaseServiceKey);
 
   if (isServiceRole) {
     return {
       client: createClient(supabaseUrl, supabaseServiceKey),
       isServiceRole: true,
-    } as const;
+    };
   }
 
   return {
@@ -252,5 +236,5 @@ function createSupabaseClient(token: string) {
       },
     }),
     isServiceRole: false,
-  } as const;
+  };
 }
