@@ -36,24 +36,23 @@ export function PRDStepOverview({
     <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold text-white">Project Basics</h2>
+        <h2 className="text-2xl font-semibold text-white">Project Basics</h2>
           <p className="text-gray-300 mt-1">
-            Fill in what you already know. Clear, conversational language works best—no jargon required.
+            Fill in what you already know. Only the quick description is required—everything else is optional and can be refined later.
           </p>
         </div>
 
-        <div className="space-y-5">
-          <Input
-            label="Project Name"
-            placeholder="E.g. LaunchPad"
-            value={formData.projectName || ''}
-            onChange={(event) => updateFormData({ projectName: event.target.value })}
-            required
-          />
+      <div className="space-y-5">
+        <Input
+          label="Project Name"
+          placeholder="E.g. LaunchPad"
+          value={formData.projectName || ''}
+          onChange={(event) => updateFormData({ projectName: event.target.value })}
+        />
 
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">Project Type</label>
-            <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium text-white mb-2">Project Type</label>
+          <div className="grid gap-3 sm:grid-cols-2">
               {PROJECT_TYPES.map((type) => {
                 const isActive = projectType === type.value;
                 return (

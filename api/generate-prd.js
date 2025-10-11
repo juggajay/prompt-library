@@ -63,8 +63,8 @@ export default async function handler(req, res) {
     }
 
     const payload = req.body || {};
-    if (!payload.projectName || !payload.projectType || !payload.description || !payload.targetAudience) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!payload.description || String(payload.description).trim().length === 0) {
+      return res.status(400).json({ error: 'Project description is required' });
     }
 
     const requirements = payload.requirements || {
@@ -80,6 +80,20 @@ export default async function handler(req, res) {
     };
 
     const startTime = Date.now();
+
+    const projectName = typeof payload.projectName === 'string' && payload.projectName.trim().length > 0
+      ? payload.projectName.trim()
+      : 'Untitled Project';
+    const projectType = typeof payload.projectType === 'string' && payload.projectType.trim().length > 0
+      ? payload.projectType.trim()
+      : 'other';
+    const targetAudience = typeof payload.targetAudience === 'string' && payload.targetAudience.trim().length > 0
+      ? payload.targetAudience.trim()
+      : 'General audience';
+    const description = payload.description.trim();
+    const timeline = typeof payload.timeline === 'string' && payload.timeline.trim().length > 0
+      ? payload.timeline.trim()
+      : 'Not specified';
 
     const systemPrompt = `You are an expert product manager creating comprehensive product requirements documents for beginners.
 Return a friendly yet thorough JSON object with clearly labeled sections that a new product builder can understand.
@@ -108,11 +122,11 @@ Keep the tone supportive, use natural language, and write in complete sentences 
     ].join('\n') || '- None provided';
 
     const userPrompt = `Create a PRD with the required JSON structure.
-Project name: ${payload.projectName}
-Project type: ${payload.projectType}
-Project description: ${payload.description}
-Target audience: ${payload.targetAudience}
-Timeline clue: ${payload.timeline || 'Not specified'}
+Project name: ${projectName}
+Project type: ${projectType}
+Project description: ${description}
+Target audience: ${targetAudience}
+Timeline clue: ${timeline}
 Requirements:
 ${requirementList}
 
@@ -136,9 +150,9 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
       console.error('Failed to parse PRD content, falling back to default shape', parseError);
       generatedContent = {
         executiveSummary: 'Summary coming soon.',
-        projectOverview: payload.description,
+        projectOverview: description,
         goalsAndObjectives: 'Goals and objectives will be defined based on project requirements.',
-        targetUsers: payload.targetAudience,
+        targetUsers: targetAudience,
         userStories: 'User stories will be developed as the project requirements are refined.',
         functionalRequirements: cleanedRequirements.functional.length > 0
           ? 'The system must: ' + cleanedRequirements.functional.join('. ') + '.'
@@ -148,7 +162,7 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
           : 'Non-functional requirements will be defined based on quality and performance needs.',
         technicalArchitecture: 'Technical architecture details will be determined during the design phase.',
         successMetrics: 'Success metrics will be defined to measure project outcomes and user satisfaction.',
-        timeline: payload.timeline || 'Timeline will be determined based on project scope and resource availability.',
+        timeline: timeline,
         risksAndMitigation: 'Risks and mitigation strategies will be identified and managed throughout the project lifecycle.',
       };
     }
@@ -162,13 +176,13 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
         user_id: user.id,
         prompt_id: payload.promptId || null,
         template_id: payload.templateId || null,
-        title: `${payload.projectName} — Product Requirements Document`,
-        project_name: payload.projectName,
-        project_type: payload.projectType,
+        title: `${projectName} — Product Requirements Document`,
+        project_name: projectName,
+        project_type: projectType,
         content: generatedContent,
         metadata: {
-          description: payload.description,
-          targetAudience: payload.targetAudience,
+          description,
+          targetAudience,
           requirements: cleanedRequirements,
           timeline: payload.timeline || null,
         },
@@ -187,6 +201,10 @@ If you need to invent details, pick reasonable beginner-friendly defaults.`;
       prompt_id: payload.promptId || null,
       generation_params: {
         ...payload,
+        projectName,
+        projectType,
+        targetAudience,
+        timeline,
         requirements: cleanedRequirements,
       },
       ai_model: 'gpt-4o-mini',

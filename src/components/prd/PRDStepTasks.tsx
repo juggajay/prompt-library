@@ -20,28 +20,18 @@ export function PRDStepTasks({
   isGenerating,
 }: PRDStepTasksProps) {
   const goals = formData.goals || [];
-
-  const canGenerate =
-    Boolean(formData.projectName?.trim()) &&
-    Boolean(formData.projectType?.trim()) &&
-    Boolean(formData.description?.trim()) &&
-    Boolean(blueprintSummary);
+  const hasDescription = Boolean(formData.description?.trim());
+  const canGenerate = Boolean(blueprintSummary) && hasDescription;
 
   const handleGenerate = () => {
-    if (
-      !canGenerate ||
-      !formData.projectName ||
-      !formData.projectType ||
-      !formData.description ||
-      !blueprintSummary
-    ) {
+    if (!canGenerate || !blueprintSummary) {
       return;
     }
 
     onGenerate({
-      projectName: formData.projectName,
-      projectType: formData.projectType,
-      description: formData.description,
+      projectName: formData.projectName?.trim() || 'Untitled Project',
+      projectType: formData.projectType || 'other',
+      description: formData.description?.trim() || 'A new project',
       architectureSummary: blueprintSummary,
       goals,
     });
@@ -72,6 +62,11 @@ export function PRDStepTasks({
         {!blueprintSummary && (
           <p className="text-sm text-amber-200">
             Generate the architecture blueprint first so the AI knows how the project is structured.
+          </p>
+        )}
+        {blueprintSummary && !hasDescription && (
+          <p className="text-sm text-amber-200">
+            Add a quick project description so the task plan has something to build from.
           </p>
         )}
       </section>

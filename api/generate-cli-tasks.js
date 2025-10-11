@@ -56,11 +56,21 @@ export default async function handler(req, res) {
     }
 
     const body = req.body || {};
-    if (!body.projectName || !body.projectType || !body.description) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!body.description || String(body.description).trim().length === 0) {
+      return res.status(400).json({ error: 'Project explanation is required' });
     }
 
     const goals = (body.goals || []).filter(Boolean);
+    const projectName = typeof body.projectName === 'string' && body.projectName.trim().length > 0
+      ? body.projectName.trim()
+      : 'Untitled Project';
+    const projectType = typeof body.projectType === 'string' && body.projectType.trim().length > 0
+      ? body.projectType.trim()
+      : 'other';
+    const description = body.description.trim();
+    const architectureSummary = typeof body.architectureSummary === 'string' && body.architectureSummary.trim().length > 0
+      ? body.architectureSummary.trim()
+      : 'Architecture overview not provided';
 
     const systemPrompt = `
 You are Nova, a senior engineer guiding a new developer through building their project using CLI copilots (Claude Code, OpenAI Codex, etc.).
@@ -87,10 +97,10 @@ Guidelines:
     `.trim();
 
     const userPrompt = `
-Project: ${body.projectName}
-Type: ${body.projectType}
-Audience: ${body.description}
-Architecture Summary: ${body.architectureSummary || 'Not provided'}
+Project: ${projectName}
+Type: ${projectType}
+Description: ${description}
+Architecture Summary: ${architectureSummary}
 Goals:
 - ${goals.join('\n- ') || 'No specific goals provided'}
     `.trim();

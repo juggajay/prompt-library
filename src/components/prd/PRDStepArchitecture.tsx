@@ -26,11 +26,12 @@ export function PRDStepArchitecture({
   const [constraintDraft, setConstraintDraft] = useState('');
   const goals = formData.goals || [];
   const constraints = formData.constraints || [];
+  const hasDescription = Boolean(formData.description?.trim());
 
   const handleGenerate = () => {
     // Use defaults for missing fields
     const projectName = formData.projectName?.trim() || 'Untitled Project';
-    const projectType = formData.projectType?.trim() || 'web_app';
+    const projectType = formData.projectType?.trim() || 'other';
     const description = formData.description?.trim() || 'A new project';
     const targetAudience = formData.targetAudience?.trim() || 'General users';
 
@@ -137,13 +138,20 @@ export function PRDStepArchitecture({
             </div>
           </div>
 
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white hover:from-purple-500 hover:to-fuchsia-500 h-12"
-          >
-            {isGenerating ? 'Drafting architecture...' : 'Generate Architecture Blueprint'}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating || !hasDescription}
+              className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white hover:from-purple-500 hover:to-fuchsia-500 h-12"
+            >
+              {isGenerating ? 'Drafting architecture...' : 'Generate Architecture Blueprint'}
+            </Button>
+            {!hasDescription && (
+              <p className="text-sm text-amber-200 text-center">
+                Add a quick project description above to unlock the blueprint.
+              </p>
+            )}
+          </div>
         </div>
 
         <aside className="rounded-3xl border border-purple-500/30 bg-purple-500/10 p-6 space-y-4 text-sm text-purple-50">

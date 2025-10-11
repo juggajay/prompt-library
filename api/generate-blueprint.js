@@ -56,12 +56,23 @@ export default async function handler(req, res) {
     }
 
     const body = req.body || {};
-    if (!body.projectName || !body.projectType || !body.description || !body.targetAudience) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!body.description || String(body.description).trim().length === 0) {
+      return res.status(400).json({ error: 'Project description is required' });
     }
 
     const goals = (body.goals || []).filter(Boolean);
     const constraints = (body.constraints || []).filter(Boolean);
+
+    const projectName = typeof body.projectName === 'string' && body.projectName.trim().length > 0
+      ? body.projectName.trim()
+      : 'Untitled Project';
+    const projectType = typeof body.projectType === 'string' && body.projectType.trim().length > 0
+      ? body.projectType.trim()
+      : 'other';
+    const targetAudience = typeof body.targetAudience === 'string' && body.targetAudience.trim().length > 0
+      ? body.targetAudience.trim()
+      : 'General audience';
+    const description = body.description.trim();
 
     const systemPrompt = `
 You are Nova, a friendly senior product engineer mentoring a new developer.
@@ -86,10 +97,10 @@ Guidelines:
     `.trim();
 
     const userPrompt = `
-Project Name: ${body.projectName}
-Project Type: ${body.projectType}
-Audience: ${body.targetAudience}
-Description: ${body.description}
+Project Name: ${projectName}
+Project Type: ${projectType}
+Audience: ${targetAudience}
+Description: ${description}
 Goals:
 - ${goals.join('\n- ') || 'No specific goals provided'}
 
@@ -123,13 +134,13 @@ Constraints:
         .from('project_blueprints')
         .insert({
           user_id: user.id,
-          title: body.projectName,
+          title: projectName,
           goal: goals.join('\n'),
-          audience: body.targetAudience,
+          audience: targetAudience,
           stage: 'draft',
           architecture: blueprint.architecture ?? {},
           overview: {
-            description: body.description,
+            description,
             goals,
             constraints,
           },
@@ -149,6 +160,9 @@ Constraints:
     return res.status(200).json({
       blueprintId,
       ...blueprint,
+      projectType,
+      targetAudience,
+      description,
     });
   } catch (error) {
     console.error('Blueprint generation error', error);

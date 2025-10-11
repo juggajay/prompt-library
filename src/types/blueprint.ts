@@ -50,6 +50,46 @@ export interface CLITaskResponse {
   recommendations: string[];
 }
 
+export interface ContextQuestion {
+  id: string;
+  question: string;
+  helper?: string;
+}
+
+export interface ContextFile {
+  id: string;
+  title: string;
+  filename: string;
+  purpose: string;
+  content: string;
+}
+
+export interface ContextPrompt {
+  title: string;
+  instructions: string;
+  prompt: string;
+}
+
+export interface ContextDecisions {
+  techStack: string[];
+  integrations: string[];
+  quality: string[];
+  notes?: string[];
+}
+
+export interface ContextPackage {
+  packageId?: string;
+  summary: string;
+  projectName: string;
+  projectType: string;
+  targetAudience: string;
+  assumptions: string[];
+  decisions: ContextDecisions;
+  files: ContextFile[];
+  prompts: ContextPrompt[];
+  nextSteps: string[];
+}
+
 export interface CreateBlueprintPayload {
   projectName: string;
   projectType: string;

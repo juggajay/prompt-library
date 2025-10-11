@@ -57,12 +57,22 @@ app.post('/api/export-prd', async (req, res) => {
 });
 
 app.post('/api/generate-blueprint', async (req, res) => {
-  const handler = await loadHandler('generate-blueprint.ts');
+  const handler = await loadHandler('generate-blueprint.js');
   return handler(req, res);
 });
 
 app.post('/api/generate-cli-tasks', async (req, res) => {
-  const handler = await loadHandler('generate-cli-tasks.ts');
+  const handler = await loadHandler('generate-cli-tasks.js');
+  return handler(req, res);
+});
+
+app.post('/api/context-questions', async (req, res) => {
+  const handler = await loadHandler('context-questions.js');
+  return handler(req, res);
+});
+
+app.post('/api/context-package', async (req, res) => {
+  const handler = await loadHandler('context-package.js');
   return handler(req, res);
 });
 
